@@ -1,6 +1,8 @@
 package app
 
 import (
+	"database/sql"
+	"fmt"
 	"sort"
 	"time"
 )
@@ -51,47 +53,65 @@ func startScheduler() {
 // hour up to (now - 1h), so a long downtime catches up cleanly.
 func aggregateHourlyCatchup() {
 	var lastBucket int64
-	_ = getDB().QueryRow(`SELECT COALESCE(MAX(bucket), 0) FROM stats_hourly`).Scan(&lastBucket)
+	if err := getDB().QueryRow(`SELECT COALESCE(MAX(bucket), 0) FROM stats_hourly`).Scan(&lastBucket); err != nil {
+		logf("[agg] 读取小时聚合进度失败: %v", err)
+		return
+	}
 	now := time.Now().Unix()
 	currentHourStart := now - (now % 3600)
 	target := currentHourStart - 3600 // most recent CLOSED hour
 	if lastBucket == 0 {
 		// First run — bootstrap from oldest request available.
 		var minTS int64
-		_ = getDB().QueryRow(`SELECT COALESCE(MIN(ts), 0) FROM requests`).Scan(&minTS)
+		if err := getDB().QueryRow(`SELECT COALESCE(MIN(ts), 0) FROM requests`).Scan(&minTS); err != nil {
+			logf("[agg] 读取最早请求时间失败: %v", err)
+			return
+		}
 		if minTS == 0 {
 			return
 		}
 		lastBucket = minTS - (minTS % 3600) - 3600
 	}
 	for b := lastBucket + 3600; b <= target; b += 3600 {
-		aggregateBucket(b, 3600, "stats_hourly")
+		if err := aggregateBucket(b, 3600, "stats_hourly"); err != nil {
+			logf("[agg] 小时聚合失败，停止推进以便下次重试: %v", err)
+			return
+		}
 	}
 }
 
 func aggregateDailyCatchup() {
 	var lastBucket int64
-	_ = getDB().QueryRow(`SELECT COALESCE(MAX(bucket), 0) FROM stats_daily`).Scan(&lastBucket)
+	if err := getDB().QueryRow(`SELECT COALESCE(MAX(bucket), 0) FROM stats_daily`).Scan(&lastBucket); err != nil {
+		logf("[agg] 读取日聚合进度失败: %v", err)
+		return
+	}
 	now := time.Now().Unix()
 	currentDayStart := now - (now % 86400)
 	target := currentDayStart - 86400
 	if lastBucket == 0 {
 		var minTS int64
-		_ = getDB().QueryRow(`SELECT COALESCE(MIN(bucket), 0) FROM stats_hourly`).Scan(&minTS)
+		if err := getDB().QueryRow(`SELECT COALESCE(MIN(bucket), 0) FROM stats_hourly`).Scan(&minTS); err != nil {
+			logf("[agg] 读取最早小时聚合时间失败: %v", err)
+			return
+		}
 		if minTS == 0 {
 			return
 		}
 		lastBucket = minTS - (minTS % 86400) - 86400
 	}
 	for b := lastBucket + 86400; b <= target; b += 86400 {
-		aggregateBucket(b, 86400, "stats_daily")
+		if err := aggregateBucket(b, 86400, "stats_daily"); err != nil {
+			logf("[agg] 日聚合失败，停止推进以便下次重试: %v", err)
+			return
+		}
 	}
 }
 
 // aggregateBucket reads raw requests in [start, start+span) and groups by
 // (model, proxy_id), writing one row per group.
 // Source for hourly = requests; for daily = stats_hourly (already aggregated).
-func aggregateBucket(start, span int64, target string) {
+func aggregateBucket(start, span int64, target string) error {
 	end := start + span
 
 	// We pre-aggregate latencies in Go to compute p50/p95 (SQLite percentile is awkward).
@@ -106,11 +126,7 @@ func aggregateBucket(start, span int64, target string) {
 	}
 	groups := map[key]*acc{}
 
-	var rows interface {
-		Close() error
-		Next() bool
-		Scan(...interface{}) error
-	}
+	var rows *sql.Rows
 	var err error
 
 	if target == "stats_hourly" {
@@ -127,8 +143,7 @@ func aggregateBucket(start, span int64, target string) {
 		rows = r
 	}
 	if err != nil {
-		logf("[agg] %s query failed: %v", target, err)
-		return
+		return fmt.Errorf("%s 查询失败: %w", target, err)
 	}
 	defer rows.Close()
 
@@ -139,7 +154,7 @@ func aggregateBucket(start, span int64, target string) {
 			var status int
 			var totalMs, pt, ot int64
 			if err := rows.Scan(&model, &proxyID, &status, &totalMs, &pt, &ot); err != nil {
-				continue
+				return fmt.Errorf("%s 读取请求失败: %w", target, err)
 			}
 			k := key{model, proxyID}
 			a := groups[k]
@@ -172,7 +187,7 @@ func aggregateBucket(start, span int64, target string) {
 			var totalMs, pt, ot int64
 			var p50, p95 int
 			if err := rows.Scan(&model, &proxyID, &requests, &successes, &failures, &totalMs, &pt, &ot, &p50, &p95); err != nil {
-				continue
+				return fmt.Errorf("%s 读取小时统计失败: %w", target, err)
 			}
 			k := key{model, proxyID}
 			a := dgroups[k]
@@ -195,10 +210,17 @@ func aggregateBucket(start, span int64, target string) {
 				a.p95N++
 			}
 		}
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("%s 遍历失败: %w", target, err)
+		}
+		if err := rows.Close(); err != nil {
+			return fmt.Errorf("%s 关闭查询失败: %w", target, err)
+		}
 		tx, err := getDB().Begin()
 		if err != nil {
-			return
+			return fmt.Errorf("%s 开始事务失败: %w", target, err)
 		}
+		defer tx.Rollback()
 		for k, a := range dgroups {
 			p50 := 0
 			if a.p50N > 0 {
@@ -208,32 +230,50 @@ func aggregateBucket(start, span int64, target string) {
 			if a.p95N > 0 {
 				p95 = a.p95Sum / a.p95N
 			}
-			_, _ = tx.Exec(upsert("stats_daily",
+			_, err := tx.Exec(upsert("stats_daily",
 				[]string{"bucket", "model", "proxy_id", "requests", "successes", "failures",
 					"total_ms", "p50_ms", "p95_ms", "prompt_tokens", "output_tokens"},
 				[]string{"bucket", "model", "proxy_id"}),
 				start, k.model, k.proxy,
 				a.count, a.success, a.fail, a.totalMs, p50, p95, a.promptT, a.outT)
+			if err != nil {
+				return fmt.Errorf("%s 写入失败: %w", target, err)
+			}
 		}
-		_ = tx.Commit()
-		return
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("%s 提交失败: %w", target, err)
+		}
+		return nil
 	}
 
 	// hourly bucket commit
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("%s 遍历失败: %w", target, err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("%s 关闭查询失败: %w", target, err)
+	}
 	tx, err := getDB().Begin()
 	if err != nil {
-		return
+		return fmt.Errorf("%s 开始事务失败: %w", target, err)
 	}
+	defer tx.Rollback()
 	for k, a := range groups {
 		p50, p95 := percentiles(a.latencies)
-		_, _ = tx.Exec(upsert("stats_hourly",
+		_, err := tx.Exec(upsert("stats_hourly",
 			[]string{"bucket", "model", "proxy_id", "requests", "successes", "failures",
 				"total_ms", "p50_ms", "p95_ms", "prompt_tokens", "output_tokens"},
 			[]string{"bucket", "model", "proxy_id"}),
 			start, k.model, k.proxy,
 			a.count, a.success, a.fail, a.totalMs, p50, p95, a.promptT, a.outT)
+		if err != nil {
+			return fmt.Errorf("%s 写入失败: %w", target, err)
+		}
 	}
-	_ = tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("%s 提交失败: %w", target, err)
+	}
+	return nil
 }
 
 func percentiles(latencies []int) (p50, p95 int) {
@@ -265,5 +305,7 @@ func retentionSweep() {
 	if n > 0 {
 		logf("[retention] purged %d old request rows", n)
 	}
-	_, _ = getDB().Exec(`DELETE FROM sessions WHERE expires_at < ?`, time.Now().Unix())
+	if _, err := getDB().Exec(`DELETE FROM sessions WHERE expires_at < ?`, time.Now().Unix()); err != nil {
+		logf("[retention] 清理过期会话失败: %v", err)
+	}
 }

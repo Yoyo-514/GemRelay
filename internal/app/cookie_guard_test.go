@@ -1,6 +1,26 @@
 package app
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+func TestAccountErrorPreservesFullText(t *testing.T) {
+	id, err := accountAdd("error-detail", "SAPISID=dummy; SID=x", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = accountDelete(id) })
+	want := strings.Repeat("连接失败：完整诊断信息\n", 40) + "诊断末尾"
+	markAccountResult(id, false, want)
+	a := accountByID(id)
+	if a == nil || a.LastError != want {
+		t.Fatal("账号错误文本不应被截断")
+	}
+	if got := cookieAcctView(*a)["last_error"]; got != want {
+		t.Fatal("面板接口应返回完整的已保存错误文本")
+	}
+}
 
 // 连续鉴权失败要自动停用，否则死号会一直排在挑号队列里，
 // 每个请求都得先为它付一次 XSRF 往返才轮到报错。

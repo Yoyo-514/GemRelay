@@ -11,12 +11,19 @@ import (
 // hasCookie() 现在只看 cookie 池，也就是要查 DB；不接管 cfg.DBPath 的话
 // getDB() 会去开真实的 ./data/gemini.db，测试就会读写生产数据。
 func TestMain(m *testing.M) {
+	// SQL_DSN 优先于 cfg.DBPath；测试进程必须忽略它，防止继承生产库连接串。
+	if err := os.Unsetenv("SQL_DSN"); err != nil {
+		panic(err)
+	}
 	dir, err := os.MkdirTemp("", "gw2a-test-")
 	if err != nil {
 		panic(err)
 	}
 	cfg.DBPath = filepath.Join(dir, "test.db")
 	code := m.Run()
+	if db != nil {
+		_ = db.Close() // Windows 上先关闭数据库，临时目录才能删除。
+	}
 	_ = os.RemoveAll(dir)
 	os.Exit(code)
 }

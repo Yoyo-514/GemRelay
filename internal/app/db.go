@@ -142,8 +142,15 @@ func getDB() *dbx {
 			fmt.Fprintf(os.Stderr, "[db] open failed: %v\n", err)
 			os.Exit(1)
 		}
-		conn.SetMaxOpenConns(8)
-		conn.SetMaxIdleConns(4)
+		// SQLite 同一时刻只有一个写者；单连接让进程内读写排队，避免连接池争抢写锁。
+		// MySQL / PostgreSQL 保留原连接池，不限制为单连接。
+		if curDialect == dialectSQLite {
+			conn.SetMaxOpenConns(1)
+			conn.SetMaxIdleConns(1)
+		} else {
+			conn.SetMaxOpenConns(8)
+			conn.SetMaxIdleConns(4)
+		}
 		conn.SetConnMaxLifetime(0)
 		// mysql/pg 驱动默认不接受多语句 Exec，按方言逐条建表。
 		for _, stmt := range schemaStatements(curDialect) {

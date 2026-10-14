@@ -420,6 +420,7 @@ func pickCookieAccountExcept(skip map[int64]bool) (*CookieAccount, bool) {
 		`SELECT id, label, cookie, status, note, created_at, last_used_at, last_ok_at, last_error, fail_count, proxy_id
 		 FROM accounts WHERE status='enabled' ORDER BY fail_count ASC, last_used_at ASC, id ASC`)
 	if err != nil {
+		logf("[db] 查询候选账号失败: %v", err)
 		return nil, false
 	}
 	defer rows.Close()
@@ -427,13 +428,33 @@ func pickCookieAccountExcept(skip map[int64]bool) (*CookieAccount, bool) {
 		var a CookieAccount
 		if err := rows.Scan(&a.ID, &a.Label, &a.Cookie, &a.Status, &a.Note,
 			&a.CreatedAt, &a.LastUsedAt, &a.LastOkAt, &a.LastError, &a.FailCount, &a.ProxyID); err != nil {
-			continue
+			logf("[db] 读取候选账号失败: %v", err)
+			return nil, false
 		}
 		if skip[a.ID] {
 			continue
 		}
-		_, _ = getDB().Exec(`UPDATE accounts SET last_used_at=? WHERE id=?`, time.Now().Unix(), a.ID)
+		// 先释放读取占用的连接，再写入；SQLite 单连接下不能持有游标等待第二条连接。
+		if err := rows.Close(); err != nil {
+			logf("[db] 关闭候选账号查询失败: %v", err)
+			return nil, false
+		}
+		now := time.Now().Unix()
+		result, err := getDB().Exec(`UPDATE accounts SET last_used_at=? WHERE id=? AND status='enabled'`, now, a.ID)
+		if err != nil {
+			logf("[db] 更新账号 #%d 使用时间失败: %v", a.ID, err)
+			return nil, false
+		}
+		changed, err := result.RowsAffected()
+		if err != nil || changed == 0 {
+			logf("[db] 账号 #%d 使用时间未更新，账号可能已被删除或停用: %v", a.ID, err)
+			return nil, false
+		}
+		a.LastUsedAt = now
 		return &a, true
+	}
+	if err := rows.Err(); err != nil {
+		logf("[db] 遍历候选账号失败: %v", err)
 	}
 	return nil, false
 }
@@ -469,14 +490,21 @@ func markAccountResult(id int64, ok bool, errStr string) {
 		return
 	}
 	if ok {
-		_, _ = getDB().Exec(
+		_, err := getDB().Exec(
 			`UPDATE accounts SET last_ok_at=?, fail_count=0, last_error='' WHERE id=?`,
 			time.Now().Unix(), id)
+		if err != nil {
+			logf("[db] 更新账号 #%d 成功状态失败: %v", id, err)
+		}
 		return
 	}
-	_, _ = getDB().Exec(
+	_, err := getDB().Exec(
 		`UPDATE accounts SET fail_count=fail_count+1, last_error=? WHERE id=?`,
-		truncate(errStr, 200), id)
+		errStr, id)
+	if err != nil {
+		logf("[db] 更新账号 #%d 失败状态失败: %v", id, err)
+		return
+	}
 	autoDisableIfDead(id)
 }
 
@@ -575,8 +603,11 @@ func bindAccountProxy(accountID, previousProxyID, proxyID int64) {
 	if accountID <= 0 || previousProxyID == proxyID || proxyUsableByID(previousProxyID) {
 		return
 	}
-	_, _ = getDB().Exec(`UPDATE accounts SET proxy_id=? WHERE id=? AND proxy_id=?`,
+	_, err := getDB().Exec(`UPDATE accounts SET proxy_id=? WHERE id=? AND proxy_id=?`,
 		proxyID, accountID, previousProxyID)
+	if err != nil {
+		logf("[db] 保存账号 #%d 代理绑定失败: %v", accountID, err)
+	}
 }
 
 // accountDisplayName 面板/记录里显示的账号名，没填标签就用 #id。
@@ -669,5 +700,7 @@ func updateAccountCookie(id int64, cookie string) {
 			return
 		}
 	}
-	_, _ = getDB().Exec(`UPDATE accounts SET cookie=? WHERE id=?`, cookie, id)
+	if _, err := getDB().Exec(`UPDATE accounts SET cookie=? WHERE id=?`, cookie, id); err != nil {
+		logf("[db] 保存账号 #%d 刷新凭证失败: %v", id, err)
+	}
 }

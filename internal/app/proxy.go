@@ -296,11 +296,16 @@ func recordProxyResult(id int64, success bool, errStr string) {
 		return
 	}
 	now := time.Now().Unix()
+	var err error
 	if success {
-		_, _ = getDB().Exec(`UPDATE proxies SET fail_count=0, last_used=?, last_error='' WHERE id=?`, now, id)
+		_, err = getDB().Exec(`UPDATE proxies SET fail_count=0, last_used=?, last_error='' WHERE id=?`, now, id)
 	} else {
-		_, _ = getDB().Exec(`UPDATE proxies SET fail_count=fail_count+1, last_used=?, last_error=? WHERE id=?`,
+		_, err = getDB().Exec(`UPDATE proxies SET fail_count=fail_count+1, last_used=?, last_error=? WHERE id=?`,
 			now, errStr, id)
+	}
+	if err != nil {
+		logf("[db] 保存代理 #%d 状态失败，保留原内存状态: %v", id, err)
+		return
 	}
 	proxyMu.Lock()
 	for i := range proxyCache {
