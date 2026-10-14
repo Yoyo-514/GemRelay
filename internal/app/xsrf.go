@@ -125,7 +125,7 @@ func fetchAppPage(cookie, proxyURL string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		applyChromeHeaders(req)
+		applyBrowserHeaders(req.Header)
 		for k, v := range headers {
 			req.Header.Set(k, v)
 		}
@@ -146,6 +146,7 @@ func fetchAppPage(cookie, proxyURL string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		applyBrowserHeaders(req.Header)
 		for k, v := range headers {
 			req.Header.Set(k, v)
 		}

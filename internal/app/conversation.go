@@ -194,7 +194,7 @@ func getAnonSession(proxyURL string) (string, error) {
 			if err != nil {
 				return nil, nil, nil, err
 			}
-			applyChromeHeaders(r)
+			applyBrowserHeaders(r.Header)
 			resp, err := getStdlibClient(proxyURL).Do(r)
 			if err != nil {
 				return nil, nil, nil, err
@@ -205,7 +205,7 @@ func getAnonSession(proxyURL string) (string, error) {
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		r.Header.Set("User-Agent", webUA)
+		applyBrowserHeaders(r.Header)
 		resp, err := getTLSClient().Do(r)
 		if err != nil {
 			return nil, nil, nil, err
@@ -236,10 +236,6 @@ func getAnonSession(proxyURL string) (string, error) {
 	}
 	return strings.Join(pairs, "; "), nil
 }
-
-// webUA 是匿名 GET /app 的 User-Agent（tls-client 路径要手动带）。
-const webUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-	"(KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
 
 // streamGenerateConv 发一路会话的一轮。turn==0 是首轮（建会话），>0 是续接（只发新消息）。
 // 整条会话绑定 conv.cookie / conv.proxyID，中途不换号不换出口。成功后回填 conv 的

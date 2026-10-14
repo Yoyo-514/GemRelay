@@ -319,7 +319,7 @@ func rotatePost(url string, headers map[string]string, body []byte, proxyURL str
 
 // rotateDo 走跟正式请求同一个出口：保活从别的 IP 发，等于告诉上游这个会话在两处活动。
 //
-// 两条传输路径共用同一份 header。以前只有走代理那条调 applyChromeHeaders，直连那条
+// 两条传输路径共用同一份 header。以前只有走代理那条填浏览器头，直连那条
 // 连 User-Agent 都不发 —— 同一个账号在上游看来会因为走没走代理而呈现两种客户端。
 func rotateDo(method, url string, headers map[string]string, body []byte, proxyURL string) (
 	int, []string, []byte, error) {
@@ -328,11 +328,7 @@ func rotateDo(method, url string, headers map[string]string, body []byte, proxyU
 		rdr = strings.NewReader(string(body))
 	}
 	merged := map[string]string{
-		"User-Agent":         ChromeUA,
-		"Accept-Language":    "en-US,en;q=0.9",
-		"Sec-CH-UA":          `"Chromium";v="146", "Google Chrome";v="146", "Not?A_Brand";v="24"`,
-		"Sec-CH-UA-Mobile":   "?0",
-		"Sec-CH-UA-Platform": `"Windows"`,
+		"Accept-Language": "en-US,en;q=0.9",
 	}
 	for k, v := range headers {
 		merged[k] = v
@@ -342,6 +338,7 @@ func rotateDo(method, url string, headers map[string]string, body []byte, proxyU
 		if err != nil {
 			return 0, nil, nil, err
 		}
+		applyBrowserHeaders(req.Header)
 		for k, v := range merged {
 			req.Header.Set(k, v)
 		}
@@ -357,6 +354,7 @@ func rotateDo(method, url string, headers map[string]string, body []byte, proxyU
 	if err != nil {
 		return 0, nil, nil, err
 	}
+	applyBrowserHeaders(req.Header)
 	for k, v := range merged {
 		req.Header.Set(k, v)
 	}

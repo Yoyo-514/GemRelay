@@ -851,7 +851,7 @@ func doGeminiRequest(endpoint, body string, headers map[string]string, proxyURL 
 		if err != nil {
 			return 0, nil, 0, nil, err
 		}
-		applyChromeHeaders(req)
+		applyBrowserHeaders(req.Header)
 		for k, v := range headers {
 			req.Header.Set(k, v)
 		}
@@ -873,6 +873,7 @@ func doGeminiRequest(endpoint, body string, headers map[string]string, proxyURL 
 	if err != nil {
 		return 0, nil, 0, nil, err
 	}
+	applyBrowserHeaders(req.Header)
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
@@ -1162,7 +1163,7 @@ func probeGemini(prompt, proxyURL string) ProbeResult {
 			res.Diagnostic = "构建请求失败: " + e.Error()
 			return res
 		}
-		applyChromeHeaders(req)
+		applyBrowserHeaders(req.Header)
 		for k, v := range headers {
 			req.Header.Set(k, v)
 		}
@@ -1184,6 +1185,7 @@ func probeGemini(prompt, proxyURL string) ProbeResult {
 			res.Diagnostic = "构建请求失败: " + e.Error()
 			return res
 		}
+		applyBrowserHeaders(req.Header)
 		for k, v := range headers {
 			req.Header.Set(k, v)
 		}

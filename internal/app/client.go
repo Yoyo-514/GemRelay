@@ -40,7 +40,7 @@ func resolveProfile(name string) profiles.ClientProfile {
 		return profiles.Firefox_120
 	case "firefox_123":
 		return profiles.Firefox_123
-	case "firefox_147", "firefox147":
+	case "firefox", "firefox_147", "firefox147", "zen":
 		return profiles.Firefox_147
 	case "safari_16_0":
 		return profiles.Safari_16_0
@@ -154,17 +154,37 @@ func makeSAPISIDHash(sapisid string) string {
 	return fmt.Sprintf("SAPISIDHASH %d_%s", ts, hex.EncodeToString(h[:]))
 }
 
-// ChromeUA 是给 stdlib 走代理时用的 Chrome 146 真实 UA 模板。
+// ChromeUA 是默认 Chrome 146 的应用层 UA 模板。
 const ChromeUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
 
-// applyChromeHeaders 给 stdlib 请求填上模拟 Chrome 146 的应用层 header。
-// utls 那层做 TLS/HTTP2 指纹我们做不到（走代理），但 header 一定要齐。
-func applyChromeHeaders(req *http.Request) {
-	req.Header.Set("User-Agent", ChromeUA)
-	req.Header.Set("Sec-CH-UA", `"Chromium";v="146", "Google Chrome";v="146", "Not?A_Brand";v="24"`)
-	req.Header.Set("Sec-CH-UA-Mobile", "?0")
-	req.Header.Set("Sec-CH-UA-Platform", `"Windows"`)
-	req.Header.Set("Sec-Fetch-Dest", "empty")
-	req.Header.Set("Sec-Fetch-Mode", "cors")
-	req.Header.Set("Sec-Fetch-Site", "same-origin")
+// applyBrowserHeaders 同时供 stdlib / fhttp 使用，浏览器家族和版本取自实际解析的 TLS 配置。
+// 走代理仍使用 stdlib TLS；这里只统一应用层标识，不宣称能改变代理路径的 TLS 指纹。
+func applyBrowserHeaders(headers map[string][]string) {
+	h := http.Header(headers)
+	id := resolveProfile(rtCfg().Impersonate).GetClientHelloId()
+	for _, key := range []string{"Sec-CH-UA", "Sec-CH-UA-Mobile", "Sec-CH-UA-Platform"} {
+		h.Del(key)
+	}
+	switch id.Client {
+	case "Firefox":
+		h.Set("User-Agent", fmt.Sprintf("Mozilla/5.0 (X11; Linux x86_64; rv:%s.0) Gecko/20100101 Firefox/%s.0", id.Version, id.Version))
+	case "Safari":
+		h.Set("User-Agent", fmt.Sprintf("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/%s Safari/605.1.15", id.Version))
+	case "iOS":
+		osVersion := strings.ReplaceAll(id.Version, ".", "_")
+		h.Set("User-Agent", fmt.Sprintf("Mozilla/5.0 (iPhone; CPU iPhone OS %s like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/%s Mobile/15E148 Safari/604.1", osVersion, id.Version))
+	default:
+		h.Set("User-Agent", strings.Replace(ChromeUA, "Chrome/146.", "Chrome/"+id.Version+".", 1))
+		h.Set("Sec-CH-UA", fmt.Sprintf(`"Chromium";v="%s", "Google Chrome";v="%s", "Not?A_Brand";v="24"`, id.Version, id.Version))
+		h.Set("Sec-CH-UA-Mobile", "?0")
+		h.Set("Sec-CH-UA-Platform", `"Windows"`)
+	}
+	// 页面导航、保活 iframe 等调用方已有的上下文头不能被默认值覆盖。
+	for key, value := range map[string]string{
+		"Sec-Fetch-Dest": "empty", "Sec-Fetch-Mode": "cors", "Sec-Fetch-Site": "same-origin",
+	} {
+		if h.Get(key) == "" {
+			h.Set(key, value)
+		}
+	}
 }
