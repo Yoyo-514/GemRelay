@@ -48,14 +48,20 @@
             "Microsoft YaHei", sans-serif;
     --mono: "Roboto Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
     --shadow: 0 1px 2px rgba(60,64,67,.06), 0 1px 3px 1px rgba(60,64,67,.05);
+    --focus: 0 0 0 3px rgba(11,87,208,.16);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: var(--sans); background: var(--bg); color: var(--text);
-    font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+    font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased;
   }
   #app { display: flex; min-height: 100vh; }
-  ::selection { background: var(--nav-on); }
+  ::selection { background: var(--nav-on); color: var(--text); }
+  * { scrollbar-width: thin; scrollbar-color: var(--outline) transparent; }
+  input, textarea { caret-color: var(--nav-on-fg); }
+  a { text-underline-offset: .2em; }
+  button, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid var(--nav-on-fg); outline-offset: 3px; }
 
   /* ── 侧栏 ───────────────────────────────────────────────────────────── */
   .sidebar {
@@ -123,17 +129,23 @@
     justify-content: space-between; gap: 16px; padding: 0 24px;
     position: sticky; top: 0; z-index: 10; background: var(--bg);
   }
-  .page-title { font-size: 20px; font-weight: 400; letter-spacing: -.01em; color: var(--text); }
+  .page-title { font-size: 23px; font-weight: 600; letter-spacing: -.02em; color: var(--text); }
   .topbar-right { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
-         box-shadow: 0 0 0 3px rgba(20,108,46,.14); }
-  .dot.bad { background: var(--fail); box-shadow: 0 0 0 3px rgba(179,38,30,.14); }
+  .service-status { display: inline-flex; align-items: center; gap: 9px; padding: 7px 12px;
+                    border-radius: var(--r-pill); background: var(--card); color: var(--text-2); }
+  .dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--ok); }
+  .dot.bad { background: var(--fail); }
+  .dot.pending { background: var(--warn); }
+  .skip-link { position: fixed; top: 10px; left: 10px; z-index: 100;
+               padding: 10px 16px; background: var(--nav-on-fg); color: white;
+               border-radius: 10px; transform: translateY(-160%); }
+  .skip-link:focus { transform: translateY(0); }
 
   main { flex: 1; padding: 4px 24px 36px; min-width: 0; }
   h2 {
-    font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 14px;
+    font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px;
     display: flex; align-items: center; justify-content: space-between;
-    gap: 12px; min-height: 32px;
+    gap: 12px; min-height: 36px; flex-wrap: wrap;
   }
 
   /* ── 卡片：纯白无描边 ───────────────────────────────────────────────── */
@@ -166,7 +178,7 @@
        vertical-align: top; overflow-wrap: anywhere; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #F6F9FE; }
-  tbody tr.row-dead { background: var(--fail-bg); box-shadow: inset 3px 0 0 var(--fail); }
+  tbody tr.row-dead { background: var(--fail-bg); }
   td.nw, th.nw { white-space: nowrap; overflow-wrap: normal; }
   td.num { font-variant-numeric: tabular-nums; }
   .empty { text-align: center; color: var(--muted); padding: 36px 0; }
@@ -178,9 +190,9 @@
        登录页的整宽按钮就是这么撑出卡片的。 */
     all: unset; box-sizing: border-box;
     cursor: pointer; font-family: var(--sans); font-size: 13px;
-    padding: 8px 18px; border-radius: var(--r-pill); white-space: nowrap;
+    padding: 9px 18px; min-height: 38px; border-radius: var(--r-pill); white-space: nowrap;
     background: var(--nav-on); color: var(--nav-on-fg); font-weight: 500;
-    transition: background .15s;
+    transition: background .15s, color .15s;
   }
   .btn:hover { background: #C2D8FA; }
   .btn:focus-visible { outline: 2px solid var(--g-blue); outline-offset: 2px; }
@@ -189,20 +201,26 @@
   .btn.danger { background: transparent; color: var(--fail); box-shadow: inset 0 0 0 1px var(--outline); }
   .btn.danger:hover { background: var(--fail-bg); }
   .btn[disabled] { opacity: .38; cursor: default; pointer-events: none; }
+  .btn.primary { background: var(--nav-on-fg); color: var(--card); }
+  .btn.primary:hover { background: #0849B1; }
   .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .controls button { background: var(--surface-hi); color: var(--text-2);
                      font-weight: 400; padding: 7px 15px; }
   .controls button:hover { background: var(--surface-press); }
   .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .actions .btn { padding: 6px 11px; min-height: 34px; }
 
   select, input[type=text], input[type=password], input[type=number], textarea {
-    font-family: var(--sans); font-size: 13px; color: var(--text);
-    background: var(--surface-hi); border: 1px solid transparent;
-    border-radius: 10px; padding: 8px 12px; outline: none; transition: border-color .15s;
+    font-family: var(--sans); font-size: 14px; color: var(--text);
+    background: var(--surface-hi); border: 1px solid var(--outline);
+    border-radius: 10px; padding: 10px 12px; min-height: 42px; outline: none;
+    transition: border-color .15s, background .15s;
   }
   textarea { width: 100%; font-family: var(--mono); font-size: 12px; resize: vertical; }
   select { cursor: pointer; }
-  select:focus, input:focus, textarea:focus { border-color: var(--g-blue); background: var(--card); }
+  select:focus, input:focus, textarea:focus { border-color: var(--nav-on-fg); background: var(--card); }
+  select:focus-visible, input:focus-visible, textarea:focus-visible { box-shadow: var(--focus); }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 
   /* ── 徽标 ───────────────────────────────────────────────────────────── */
   .badge { display: inline-block; padding: 3px 10px; border-radius: var(--r-pill);
@@ -220,7 +238,7 @@
          padding: 1px 6px; border-radius: 5px; }
   .muted { color: var(--muted); }
   .truncate { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .hint, .desc { color: var(--muted); font-size: 12.5px; line-height: 1.6; }
+  .hint, .desc { color: var(--muted); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
   /* 卡片抬头下面那句说明，统一走这个类，不再每处写一遍 inline style */
   .lede { color: var(--muted); font-size: 12.5px; line-height: 1.65; margin-bottom: 12px; }
   /* 只读的键值表：没有表头，左列窄且不换行 */
@@ -236,8 +254,10 @@
   details.note > summary { cursor: pointer; color: var(--nav-on-fg); font-size: 12.5px;
                            list-style: none; display: inline-flex; align-items: center; gap: 4px; }
   details.note > summary::-webkit-details-marker { display: none; }
-  details.note > summary::after { content: "▾"; font-size: 10px; }
-  details.note[open] > summary::after { content: "▴"; }
+  details.note > summary::after { content: ""; width: 6px; height: 6px; margin-left: 4px;
+                                 border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+                                 transform: rotate(45deg); }
+  details.note[open] > summary::after { transform: rotate(225deg); }
   details.note .body { color: var(--muted); font-size: 12.5px; line-height: 1.65;
                        margin-top: 8px; padding: 12px 14px; background: var(--bg);
                        border-radius: 12px; }
@@ -245,26 +265,30 @@
   /* ── 运行时配置表单 ─────────────────────────────────────────────────
      原来一项一整行（标签 | 输入 | 提示），12 项就是 12 行、右边三分之二空着，
      整页拉到 2200px。改成按语义分组、组内自适应多列，标签压在输入框上方。 */
-  .cfg-group { margin-bottom: 22px; }
+  .cfg-group { margin-bottom: 28px; }
   .cfg-group:last-of-type { margin-bottom: 0; }
-  .cfg-group > h3 { font-size: 12px; font-weight: 500; color: var(--muted);
-                    margin-bottom: 12px; padding-bottom: 7px;
+  .cfg-group > h3 { font-size: 14px; font-weight: 600; color: var(--text-2);
+                    margin-bottom: 16px; padding-bottom: 10px;
                     border-bottom: 1px solid var(--outline-soft); }
-  .cfg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(186px, 1fr));
+  .cfg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,220px), 1fr));
               gap: 16px 18px; }
+  .cfg-toggle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,280px), 1fr));
+                     gap: 12px; margin-top: 18px; }
   .cfg-item { min-width: 0; }
-  .cfg-item > label { display: block; font-size: 12.5px; color: var(--text-2); margin-bottom: 6px; }
+  .cfg-item > label { display: block; font-size: 14px; font-weight: 500; color: var(--text-2); margin-bottom: 7px; }
   .cfg-item input[type=text], .cfg-item input[type=number], .cfg-item select { width: 100%; }
   .cfg-item.wide { grid-column: 1 / -1; }
-  .cfg-item.check { display: flex; align-items: center; gap: 10px;
-                  margin-top: 25px; }  /* 25px = 标签行高 + 下边距，对齐同行输入框 */
-  .cfg-item.check > label { margin: 0; }
+  .cfg-item.check { display: grid; grid-template-columns: minmax(0,1fr) auto; align-content: start;
+                    gap: 8px 14px; padding: 15px 16px; background: var(--bg); border-radius: 12px; }
+  .cfg-item.check > label { margin: 0; align-self: center; cursor: pointer; }
   .cfg-item input[type=checkbox] { width: 18px; height: 18px; flex: none;
                                    accent-color: var(--nav-on-fg); }
-  .rthint { color: var(--muted); font-size: 11.5px; line-height: 1.45; margin-top: 5px; }
-  .cfg-item.check .rthint { margin: 0; }
-  .cfg-actions { display: flex; gap: 8px; align-items: center; margin-top: 20px;
-                 padding-top: 16px; border-top: 1px solid var(--outline-soft); }
+  .rthint { color: var(--muted); font-size: 13px; line-height: 1.65; margin-top: 7px; overflow-wrap: anywhere; }
+  .cfg-item.check .rthint { grid-column: 1 / -1; margin: 0; }
+  .cfg-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 24px;
+                 padding-top: 18px; border-top: 1px solid var(--outline-soft); }
+  .cfg-actions [role=status] { flex-basis: 100%; font-size: 13px; }
+  .settings-layout { grid-template-columns: minmax(0,2fr) minmax(280px,1fr); }
 
   /* ── signature：距离封禁红线 ─────────────────────────────────────────
      实测单出口打 80-180 次后被 Google 重定向到 sorry 页，轨道取下沿 80。
@@ -297,7 +321,10 @@
   /* ── 定高列表：撑满视口，不被数据撑开 ───────────────────────────────── */
   .page-fill { display: flex; flex-direction: column;
                height: calc(100vh - var(--topbar-h) - 44px); margin-bottom: 0; }
-  .table-scroll { flex: 1; min-height: 0; overflow: auto; }
+  .table-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior-inline: contain; }
+  .table-scroll > table { min-width: 1020px; }
+  .table-scroll > table.accounts-table { min-width: 1320px; }
+  #reqTable { min-width: 1200px; }
   .table-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--card); }
   .pager { display: flex; align-items: center; justify-content: space-between;
            gap: 12px; padding-top: 14px; margin-top: 4px; flex-wrap: wrap;
@@ -308,24 +335,48 @@
   /* align-self 不能省：#app 是 flex 容器，登录态下 .login-box 是唯一子项，
      默认 align-items:stretch 会把它拉到容器满高（100vh 减上下 margin），
      卡片底下就空出一大片。这里让它按内容高度，横向仍靠 auto margin 居中。 */
-  .login-box { align-self: flex-start; width: 372px; max-width: 92vw;
+   .login-box { align-self: flex-start; width: 420px; max-width: 92vw;
                margin: 16vh auto; background: var(--card);
                border-radius: 28px; padding: 34px 32px;
                box-shadow: 0 1px 3px rgba(60,64,67,.16), 0 8px 28px rgba(60,64,67,.1); }
-  .login-box h1 { font-size: 19px; font-weight: 400; margin-bottom: 22px;
+   .login-box h1 { font-size: 20px; font-weight: 600; margin-bottom: 12px;
                   display: flex; align-items: center; gap: 10px; }
-  .login-box input { width: 100%; margin-bottom: 14px; padding: 12px 15px; }
+   .login-box input { width: 100%; margin-bottom: 14px; padding: 12px 15px; }
+   .login-box label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 500; }
+  .login-box .lede { margin-bottom: 24px; }
+  #loginErr { min-height: 21px; }
   .login-box .btn { width: 100%; text-align: center; background: var(--nav-on-fg); color: #fff; }
   .login-box .btn:hover { background: #0A4FBC; }
 
   /* ── 弹窗 ───────────────────────────────────────────────────────────── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(32,33,36,.45);
-                   display: flex; align-items: center; justify-content: center; z-index: 50; }
+   .modal-overlay { position: fixed; inset: 0; background: rgba(32,33,36,.45); padding: 20px;
+                    display: flex; align-items: center; justify-content: center; z-index: 50; }
   .modal { background: var(--card); border-radius: 28px; padding: 26px 28px;
-           width: min(460px,92vw); box-shadow: 0 8px 32px rgba(60,64,67,.24); }
-  .modal h3 { font-size: 17px; font-weight: 400; margin-bottom: 8px; }
+            width: min(460px,100%); max-height: calc(100dvh - 40px); overflow: auto;
+            box-shadow: 0 8px 32px rgba(60,64,67,.24); }
+   .modal h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
   .modal-body { margin: 14px 0 18px; }
-  .modal-err { color: var(--fail); font-size: 12.5px; margin-bottom: 10px; }
+   .modal-err { color: var(--fail); font-size: 12.5px; margin-bottom: 10px; }
+   .modal .field > label { display: block; margin-bottom: 7px; font-weight: 500; }
+   .modal .field > input { width: 100%; }
+   .modal > .actions { justify-content: flex-end; }
+   .toast-stack { position: fixed; bottom: 24px; right: 24px; width: min(440px,calc(100vw - 32px));
+                  max-height: 60vh; overflow-y: auto; display: grid; gap: 10px; z-index: 100; }
+   .toast { position: relative;
+            padding: 14px 18px; border-radius: 14px; font-size: 14px; line-height: 1.6;
+            background: var(--text); color: var(--card);
+            box-shadow: 0 8px 24px rgba(31,31,31,.18); overflow-wrap: anywhere; }
+   .toast-message { white-space: pre-wrap; max-height: 12rem; overflow-y: auto; }
+   .toast-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; }
+   .toast-actions button { background: transparent; color: white; padding: 4px 8px;
+                           font: inherit; border: 1px solid rgba(255,255,255,.5); border-radius: 7px; cursor: pointer; }
+   .error-summary { min-width: 0; }
+   .error-summary .pre { color: var(--fail); }
+   .error-summary button { color: var(--nav-on-fg); background: transparent; border: none;
+                           font: inherit; font-size: 12px; cursor: pointer; padding: 5px 0; text-decoration: underline;
+                           text-underline-offset: 3px; }
+   .error-detail { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 55vh; overflow-y: auto;
+                    padding: 14px; border-radius: 10px; background: var(--bg); font: 13px/1.7 var(--mono); }
 
   /* ── 分段切换（导入 Cookie 的两种填法）────────────────────────────────
      两种填法各有各的场景：逐项适合照着 DevTools 一条条抄，整串适合已经有
@@ -349,10 +400,10 @@
                    text-overflow: ellipsis; }
   .ck-extra { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
   /* 逐项模式列了 7 个框，窄屏下别把弹窗撑爆 */
-  .modal.wide { width: min(620px, 94vw); }
+   .modal.wide { width: min(620px, 100%); }
 
   @media (max-width: 1100px) { .grid-main { grid-template-columns: 1fr; } }
-  @media (max-width: 900px) {
+   @media (max-width: 900px) {
     #app { flex-direction: column; }
     .sidebar, .sidebar.collapsed { width: 100%; flex-basis: auto; height: auto;
                                    position: static; padding: 8px 12px; }
@@ -364,8 +415,29 @@
     .topbar { padding: 0 14px; }
     main { padding: 4px 14px 28px; }
     .grid-2 { grid-template-columns: 1fr; }
-    .chart-wrap { height: 210px; }
-  }
+     .chart-wrap { height: 210px; }
+     .page-fill { height: auto; min-height: 60vh; }
+     .table-scroll { max-height: 65vh; }
+   }
+   @media (max-width: 600px) {
+     body { font-size: 16px; }
+     .topbar { padding: 0 16px; }
+     .page-title { font-size: 21px; }
+     main { padding: 4px 12px 24px; }
+     .panel, .card { padding: 18px 16px; }
+     .grid-2, .settings-layout { grid-template-columns: minmax(0,1fr); }
+     .cfg-grid, .cfg-toggle-grid { grid-template-columns: minmax(0,1fr); }
+     .kpi-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+     .kpi { padding: 14px; }
+     select, input[type=text], input[type=password], input[type=number], textarea { font-size: 16px; }
+     .btn, .controls button { min-height: 44px; }
+     .controls { width: 100%; }
+     .controls select { flex: 1; min-width: 120px; }
+     .modal-overlay { padding: 12px; }
+     .modal { padding: 22px 18px; max-height: calc(100dvh - 24px); }
+     .login-box { margin: 8vh auto; padding: 28px 24px; }
+     .toast-stack { left: 16px; right: 16px; bottom: 16px; width: auto; }
+   }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
@@ -581,8 +653,14 @@ const pages = {
     `;
   },
 
-  proxies: async () => {
-    const data = await api('api/proxies');
+  proxies: async () => { const data = await api("api/proxies"); return renderProxyPool(data); },
+
+  cookies: async () => { const data = await api("api/cookies"); return renderCookiePool(data); },
+
+  settings: async () => { const k = await api("api/apikey"); return renderSettingsPage(k); },
+};
+
+function renderProxyPool(data) {
     return `
       <div class="panel page-fill">
         <h2>代理池
@@ -605,7 +683,7 @@ const pages = {
             <colgroup>
               <col style="width:56px"><col style="width:150px"><col>
               <col style="width:88px"><col style="width:80px"><col style="width:200px">
-              <col style="width:186px">
+               <col style="width:236px">
             </colgroup>
             <thead><tr>
               <th class="nw">ID</th><th class="nw">名称</th><th>代理 URL</th><th class="nw">状态</th>
@@ -618,7 +696,7 @@ const pages = {
                 <td class="pre truncate" title="${escapeHtml(p.url)}">${escapeHtml(p.url)}</td>
                 <td class="nw">${p.enabled ? '<span class="badge ok">已启用</span>' : '<span class="badge muted">已禁用</span>'}</td>
                 <td class="num nw">${p.fail_count > 0 ? '<span class="badge fail">' + p.fail_count + '</span>' : p.fail_count}</td>
-                <td class="pre truncate" title="${escapeHtml(p.last_error || '')}">${escapeHtml(p.last_error || '—')}</td>
+                 <td>${renderErrorSummary(p.last_error)}</td>
                 <td class="nw">
                   <span class="actions">
                     <button class="btn muted" onclick="toggleProxy(${p.id})">${p.enabled ? '禁用' : '启用'}</button>
@@ -632,10 +710,9 @@ const pages = {
         </div>
       </div>
     `;
-  },
+}
 
-  cookies: async () => {
-    const data = await api('api/cookies');
+function renderCookiePool(data) {
     const items = data.items || [];
     const deadN = items.filter(a => a.health === 'dead').length;
     return `
@@ -660,11 +737,11 @@ const pages = {
           </div>
         </details>
         <div class="table-scroll">
-          <table>
-            <colgroup>
-              <col style="width:48px"><col style="width:160px"><col style="width:80px">
-              <col style="width:150px"><col style="width:92px"><col style="width:64px">
-              <col style="width:150px"><col><col style="width:150px">
+           <table class="accounts-table">
+             <colgroup>
+               <col style="width:48px"><col style="width:160px"><col style="width:80px">
+               <col style="width:150px"><col style="width:92px"><col style="width:64px">
+               <col style="width:150px"><col><col style="width:270px">
             </colgroup>
             <thead><tr>
               <th class="nw">ID</th><th class="nw">标签</th><th class="nw">状态</th>
@@ -682,13 +759,13 @@ const pages = {
                   : '<span class="badge ok">正常</span>'
                 }</td>
                 <td class="nw" title="共 ${a.cookie_count} 个 cookie，关键项：${(a.key_cookies||[]).join(' / ')}">
-                  <span class="badge ${a.has_1psidts ? 'ok' : 'warn'}">${(a.key_cookies||[]).length}/7 项</span>
+                   <span class="badge ${a.has_1psidts ? 'ok' : 'warn'}">${(a.key_cookies||[]).length}/9 项</span>
                   ${a.has_1psidts ? '' : '<span class="badge warn" title="缺 __Secure-1PSIDTS，首次保活会尝试补发；失败请用 Firefox 重新导出">缺 TS</span>'}
                 </td>
                 <td class="pre nw">${a.sapisid_tail ? '…' + escapeHtml(a.sapisid_tail) : '—'}</td>
                 <td class="num nw">${a.fail_count > 0 ? '<span class="badge fail">' + a.fail_count + '</span>' : 0}</td>
                 <td class="nw" style="font-size:12px;color:var(--muted)">${a.last_ok_at ? fmt.ts(a.last_ok_at) : '—'}</td>
-                <td class="pre truncate" title="${escapeHtml(a.last_error || '')}">${escapeHtml(a.last_error || '—')}</td>
+                 <td>${renderErrorSummary(a.last_error)}</td>
                 <td class="nw">
                   <span class="actions">
                     <button class="btn muted" onclick="checkCookieAcct(${a.id}, this)">检测</button>
@@ -704,13 +781,12 @@ const pages = {
         </div>
       </div>
     `;
-  },
+}
 
-  settings: async () => {
-    const k = await api('api/apikey');
+function renderSettingsPage(k) {
     return `
-      <div class="grid-main">
-        <div class="panel">
+       <div class="grid-main settings-layout">
+         <div class="panel">
           <h2>运行时配置</h2>
           <p class="lede">
             改完点保存<b>立刻生效</b>，不用重启。存在数据库里，优先级高于
@@ -718,9 +794,9 @@ const pages = {
           </p>
           <div id="rtCfgForm"></div>
           <div class="cfg-actions">
-            <button class="btn" onclick="saveRtCfg()">保存并生效</button>
-            <button class="btn muted" onclick="loadRtCfg()">放弃修改</button>
-            <span id="rtCfgMsg" style="font-size:12.5px;"></span>
+             <button class="btn primary" id="rtCfgSave" onclick="saveRtCfg()">保存并生效</button>
+             <button class="btn muted" id="rtCfgReset" onclick="loadRtCfg()">放弃修改</button>
+             <span id="rtCfgMsg" role="status" aria-live="polite"></span>
           </div>
         </div>
 
@@ -771,8 +847,7 @@ const pages = {
         </div>
       </div>
     `;
-  },
-};
+}
 
 // ─── Charts + handlers ──────────────────────────────────────────────────────
 
@@ -866,8 +941,7 @@ async function loadReqs() {
       <td class="num nw">${fmt.num(r.prompt_tokens)}</td>
       <td class="num nw">${fmt.num(r.output_tokens)}</td>
       <td><span class="pre">${escapeHtml(r.endpoint)}${r.stream ? ' <span class="badge muted">stream</span>' : ''}</span>
-        ${r.error ? '<div class="pre clamp2" style="color:var(--fail);margin-top:4px" title="'
-          + escapeHtml(r.error) + '"><b>错误：</b>' + escapeHtml(r.error) + '</div>' : ''}
+         ${r.error ? renderErrorSummary(r.error) : ''}
       </td>
     </tr>`).join('') || '<tr><td colspan="11" class="empty">还没有请求记录</td></tr>';
   const size = reqPageSize();
@@ -911,13 +985,13 @@ async function loadReqs() {
 // 调产能 / 调容错 / 调怎么发请求 / 调留多少数据，而不是按字段类型堆在一起。
 const RT_GROUPS = [
   {
-    title: '流量控制 · 每个 IP slot 独立计数',
+     title: '出口流量控制',
     fields: [
-      { k: 'per_ip_concurrent', label: '并发', type: 'int', min: 0, max: 1000,
+       { k: 'per_ip_concurrent', label: '并发请求数', type: 'int', min: 0, max: 1000,
         hint: '同一时刻最多几个请求在飞，0=不限' },
-      { k: 'per_ip_rpm', label: 'RPM', type: 'int', min: 0, max: 10000,
+       { k: 'per_ip_rpm', label: '每分钟限额（RPM）', type: 'int', min: 0, max: 10000,
         hint: '滚动 60 秒窗口上限，0=不限' },
-      { k: 'per_ip_rph', label: 'RPH', type: 'int', min: 0, max: 100000,
+       { k: 'per_ip_rph', label: '每小时限额（RPH）', type: 'int', min: 0, max: 100000,
         hint: '滚动 1 小时上限，0=不限。实测单出口 80-180 次被拦，默认取下沿 80。按低速率跑可以调高很多——10 次/分钟连打 800 次没被拦过' },
     ],
   },
@@ -935,7 +1009,7 @@ const RT_GROUPS = [
     fields: [
       { k: 'default_model', label: '默认模型', type: 'select',
         hint: '客户端没传 model 时用哪个' },
-      { k: 'max_prompt_bytes', label: 'Prompt 字节上限', type: 'int', min: 0, max: 10000000,
+       { k: 'max_prompt_bytes', label: '提示词字节上限', type: 'int', min: 0, max: 10000000,
         hint: '超了直接返回 400 context_length_exceeded。上游的墙实测在约 13 万 UTF-8 字节，按字节算跟语言无关（同字节数下中英文表现一致，而 token 数差 1.9 倍）。不拦的话上游从尾部静默截断，被吃掉的正是刚问的那句。0=不限' },
       { k: 'impersonate', label: 'TLS 指纹', type: 'text',
         hint: 'chrome_146 / chrome_144 / firefox_147 / safari_16_0 …' },
@@ -944,11 +1018,11 @@ const RT_GROUPS = [
       { k: 'gemini_bl_auto', label: '自动跟随 bl 版本', type: 'bool',
         hint: '每 6 小时从 /app 页面抓一次最新版本号，抓到就用抓到的。抓不到或格式不对就继续用上面钉的值' },
       { k: 'auto_delete_conversation', label: '自动删网页会话', type: 'bool',
-        hint: '出完结果自动删掉 gemini.google.com 上留下的这条会话，免得登录号里堆一堆。只登录态生效，异步 best-effort，删失败不影响响应' },
+         hint: '单轮请求成功后尝试删除网页会话，删除失败不影响回复。仅登录态生效；服务端多轮路径不执行自动删除。' },
       { k: 'temporary_chat', label: '临时对话', type: 'bool',
         hint: '走网页端原生「临时对话」（inner[45]=1）：会话压根不进账号的会话列表、不用于训练，比「自动删网页会话」更干净，还省掉那次删除请求。只登录态有意义；开了「服务端多轮续接」时不生效（临时对话不留列表，多轮要靠服务端留会话）' },
       { k: 'multi_turn', label: '服务端多轮续接', type: 'bool',
-        hint: '走 Gemini 原生服务端多轮：按历史前缀认出这是上一轮的续接，命中就只发最新一句、历史留在服务端，同一串对话复用同一个 gemini 会话（不再每发一条就新开一个）。匿名/登录都行，带图或带工具时不生效。首轮/重启/改历史会退回整段重发。默认关' },
+         hint: '复用 Gemini 会话，续接时只发送最新消息，历史保留在服务端。首轮、重启或历史不匹配时发送完整历史；续接失败会作废本地记录，下次客户端重试时重开。带附件或使用媒体生成模型时走单轮。' },
       { k: 'anon_first', label: '匿名优先', type: 'bool',
         hint: '这次请求不需要登录态能力时（纯文本、非思考、无工具、不带图）走匿名、不占用 cookie 账号，省账号额度；用到 3.1 Pro / 3.8 Flash / 扩展思考 / 生图 / 传文件这些才挑号。关掉则只要池里有号就一律用号（默认关）' },
     ],
@@ -976,43 +1050,48 @@ const RT_GROUPS = [
 
 let rtCfgCache = null, rtModels = [];
 
+// 纯渲染函数保留全部配置字段，网络读取和表单呈现分别维护。
+function renderRuntimeConfig(config, models) {
+  const renderField = f => {
+    const value = config[f.k];
+    const id = 'rt_' + f.k;
+    const hint = f.hint ? `<div class="rthint" id="${id}_hint">${escapeHtml(f.hint)}</div>` : '';
+    const described = f.hint ? ` aria-describedby="${id}_hint"` : '';
+    if (f.type === 'bool') {
+      return `<div class="cfg-item check">
+        <label for="${id}">${escapeHtml(f.label)}</label>
+        <input type="checkbox" id="${id}"${described} ${value ? 'checked' : ''}>
+        ${hint}</div>`;
+    }
+    let input;
+    if (f.type === 'select') {
+      input = `<select id="${id}"${described}>` + models.map(model =>
+        `<option value="${escapeHtml(model)}" ${model === value ? 'selected' : ''}>${escapeHtml(model)}</option>`
+      ).join('') + '</select>';
+    } else if (f.type === 'int') {
+      input = `<input type="number" id="${id}"${described} value="${escapeHtml(String(value ?? ''))}" min="${f.min}" max="${f.max}" required>`;
+    } else {
+      input = `<input type="text" id="${id}"${described} value="${escapeHtml(String(value ?? ''))}">`;
+    }
+    return `<div class="cfg-item${f.wide ? ' wide' : ''}">
+      <label for="${id}">${escapeHtml(f.label)}</label>${input}${hint}</div>`;
+  };
+  return RT_GROUPS.map(group => {
+    const fields = group.fields.filter(field => field.type !== 'bool');
+    const toggles = group.fields.filter(field => field.type === 'bool');
+    return `<section class="cfg-group">
+      <h3>${escapeHtml(group.title)}</h3>
+      ${fields.length ? `<div class="cfg-grid">${fields.map(renderField).join('')}</div>` : ''}
+      ${toggles.length ? `<div class="cfg-toggle-grid">${toggles.map(renderField).join('')}</div>` : ''}
+    </section>`;
+  }).join('');
+}
+
 async function loadRtCfg() {
   const data = await api('api/config');
   if (!data) return;
   rtCfgCache = data.config; rtModels = data.models || [];
-  document.getElementById('rtCfgForm').innerHTML = RT_GROUPS.map(g => `
-    <div class="cfg-group">
-      <h3>${escapeHtml(g.title)}</h3>
-      <div class="cfg-grid">
-        ${g.fields.map(f => {
-          const v = rtCfgCache[f.k];
-          let input;
-          if (f.type === 'bool') {
-            input = `<input type="checkbox" id="rt_${f.k}" ${v ? 'checked' : ''}>`;
-          } else if (f.type === 'select') {
-            input = `<select id="rt_${f.k}">` + rtModels.map(m =>
-              `<option value="${escapeHtml(m)}" ${m === v ? 'selected' : ''}>${escapeHtml(m)}</option>`
-            ).join('') + '</select>';
-          } else if (f.type === 'int') {
-            input = `<input type="number" id="rt_${f.k}" value="${v}" min="${f.min}" max="${f.max}">`;
-          } else {
-            input = `<input type="text" id="rt_${f.k}" value="${escapeHtml(String(v ?? ''))}">`;
-          }
-          // 复选框把标签放右边，跟输入框类字段的竖排区分开
-          if (f.type === 'bool') {
-            return `<div class="cfg-item check">
-              ${input}<label for="rt_${f.k}">${f.label}</label>
-              ${f.hint ? `<span class="rthint">${escapeHtml(f.hint)}</span>` : ''}
-            </div>`;
-          }
-          return `<div class="cfg-item${f.wide ? ' wide' : ''}">
-            <label for="rt_${f.k}">${f.label}</label>
-            ${input}
-            ${f.hint ? `<div class="rthint">${escapeHtml(f.hint)}</div>` : ''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`).join('');
+  document.getElementById('rtCfgForm').innerHTML = renderRuntimeConfig(rtCfgCache, rtModels);
 
   // 三列（项/值/怎么改）挤在窄栏里读不动，第三列换成 title 悬浮
   const d = data.deploy || {};
@@ -1031,29 +1110,41 @@ async function loadRtCfg() {
 
 async function saveRtCfg() {
   const msg = document.getElementById('rtCfgMsg');
+  const save = document.getElementById('rtCfgSave');
+  const reset = document.getElementById('rtCfgReset');
+  if (save.disabled) return;
   const body = {};
   for (const f of RT_GROUPS.flatMap(g => g.fields)) {
     const el = document.getElementById('rt_' + f.k);
     if (!el) continue;
+    if (!el.checkValidity()) {
+      el.reportValidity();
+      msg.textContent = '请检查「' + f.label + '」的输入。';
+      msg.style.color = 'var(--fail)';
+      return;
+    }
     body[f.k] = f.type === 'bool' ? el.checked
       : f.type === 'int' ? parseInt(el.value, 10)
       : el.value.trim();
   }
   msg.textContent = '保存中…'; msg.style.color = 'var(--muted)';
-  const res = await fetch('api/config', {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    msg.textContent = '保存失败：' + (data.error || res.status);
+  save.disabled = reset.disabled = true;
+  try {
+    const res = await fetch('api/config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    rtCfgCache = data.config;
+    msg.textContent = '已保存并生效';
+    msg.style.color = 'var(--ok)';
+  } catch (error) {
+    msg.textContent = '保存失败：' + error.message;
     msg.style.color = 'var(--fail)';
-    return;
+  } finally {
+    save.disabled = reset.disabled = false;
   }
-  rtCfgCache = data.config;
-  msg.textContent = '已保存并生效';
-  msg.style.color = 'var(--ok)';
-  setTimeout(() => { msg.textContent = ''; }, 3000);
 }
 
 const ERR_BADGE = {
@@ -1071,7 +1162,35 @@ const ERR_DESC = {
 };
 
 function escapeHtml(s) {
-  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderErrorSummary(message) {
+  if (!message) return '<span class="muted">—</span>';
+  const text = escapeHtml(message);
+  return `<div class="error-summary">
+    <div class="pre clamp2" title="${text}">${text}</div>
+    <button type="button" data-error="${text}" onclick="showErrorDetail(this.dataset.error)">查看完整错误</button>
+  </div>`;
+}
+
+function showErrorDetail(message) {
+  const text = String(message ?? '');
+  return buildModal({
+    title: '错误详情',
+    desc: '展示后端返回的全部错误文本。旧记录中已截断的内容无法恢复；上游原始响应可能仅保留安全片段。',
+    bodyHTML: `<pre class="error-detail">${escapeHtml(text)}</pre><div class="hint" data-copy-status role="status"></div>`,
+    submitText: '复制全文', cancelText: '关闭', wide: true, dismissOnBackdrop: false,
+    onSubmit: async overlay => {
+      try {
+        await copyText(text);
+        overlay.querySelector('[data-copy-status]').textContent = '已复制完整文本';
+      } catch (error) {
+        return { error: '复制失败，请手动选择并复制文本。' };
+      }
+      return false;
+    },
+  });
 }
 
 // 服务端会静默降级（例如请求 3.1 Pro 实际给的是 3.6 Flash），只看请求名发现不了。
@@ -1435,11 +1554,29 @@ function toggleKeyVis() {
 async function copyKey() {
   const el = document.getElementById('apiKeyView');
   try {
-    await navigator.clipboard.writeText(el.value);
+    await copyText(el.value);
     flash('已复制到剪贴板');
   } catch (e) {
-    el.type = 'text'; el.select(); document.execCommand('copy');
-    flash('已复制（兼容模式）');
+    flash('复制失败，请手动选择并复制密钥。');
+  }
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text ?? ''));
+  } catch (error) {
+    const input = document.createElement('textarea');
+    const focused = document.activeElement;
+    input.value = String(text ?? '');
+    input.style.cssText = 'position:fixed;left:-9999px;top:0;';
+    document.body.appendChild(input);
+    try {
+      input.select();
+      if (!document.execCommand('copy')) throw new Error('clipboard unavailable');
+    } finally {
+      input.remove();
+      if (focused && focused.isConnected) focused.focus();
+    }
   }
 }
 
@@ -1479,13 +1616,30 @@ async function customKey() {
 }
 
 function flash(msg) {
-  const t = document.createElement('div');
-  t.textContent = msg;
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1F1F1F;color:#fff;'
-    + 'padding:12px 20px;border-radius:12px;font-size:13px;z-index:9999;'
-    + 'box-shadow:0 4px 16px rgba(60,64,67,.3);';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 1800);
+  let stack = document.getElementById('toastStack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toastStack';
+    stack.className = 'toast-stack';
+    stack.setAttribute('aria-label', '操作通知');
+    document.body.appendChild(stack);
+  }
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.setAttribute('role', 'status');
+  const text = String(msg ?? '');
+  toast.innerHTML = `<div class="toast-message">${escapeHtml(text)}</div>
+    <div class="toast-actions">
+      ${text.length > 160 ? '<button type="button" data-details>查看详情</button>' : ''}
+      <button type="button" data-close aria-label="关闭此通知">关闭</button>
+    </div>`;
+  toast.querySelector('[data-close]').onclick = () => {
+    toast.remove();
+    if (!stack.children.length) stack.remove();
+  };
+  const details = toast.querySelector('[data-details]');
+  if (details) details.onclick = () => showErrorDetail(text);
+  stack.appendChild(toast);
 }
 
 // 自定义弹窗 ──────────────────────────────────────────────────────────────
@@ -1494,18 +1648,19 @@ function flash(msg) {
 //   modalForm({ title, desc, fields: [{name,label,...}], submitText })
 //                                                            -> obj|null
 
-function buildModal({ title, desc, bodyHTML, submitText, danger, wide, allowEnter, onReady, onSubmit }) {
+function buildModal({ title, desc, bodyHTML, submitText, cancelText = '取消', danger, wide, allowEnter, dismissOnBackdrop = true, onReady, onSubmit }) {
   return new Promise(resolve => {
+    const previousFocus = document.activeElement;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="modal${wide ? ' wide' : ''}" role="dialog" aria-modal="true">
+      <div class="modal${wide ? ' wide' : ''}" role="dialog" aria-modal="true" aria-label="${escapeHtml(title || '操作确认')}" tabindex="-1">
         ${title ? `<h3>${escapeHtml(title)}</h3>` : ''}
         ${desc ? `<div class="desc">${desc}</div>` : ''}
-        <div class="modal-err" style="display:none;"></div>
+        <div class="modal-err" role="alert" style="display:none;"></div>
         <div class="modal-body">${bodyHTML || ''}</div>
         <div class="actions">
-          <button class="btn muted" data-act="cancel">取消</button>
+          <button class="btn muted" data-act="cancel">${escapeHtml(cancelText)}</button>
           <button class="btn ${danger ? 'danger' : ''}" data-act="ok">${escapeHtml(submitText || '确定')}</button>
         </div>
       </div>`;
@@ -1517,6 +1672,7 @@ function buildModal({ title, desc, bodyHTML, submitText, danger, wide, allowEnte
     const finish = (val) => {
       overlay.remove();
       document.removeEventListener('keydown', keyHandler);
+      if (previousFocus && previousFocus.isConnected) previousFocus.focus();
       resolve(val);
     };
     const showErr = (msg) => {
@@ -1533,10 +1689,21 @@ function buildModal({ title, desc, bodyHTML, submitText, danger, wide, allowEnte
       if (result && typeof result === 'object' && result.error) { showErr(result.error); return; }
       finish(result === true ? true : result);
     };
-    overlay.onclick = (e) => { if (e.target === overlay) finish(null); };
+    overlay.onclick = (e) => { if (dismissOnBackdrop && e.target === overlay) finish(null); };
 
     const keyHandler = (e) => {
-      if (e.key === 'Escape') finish(null);
+      if (e.key === 'Escape') { e.preventDefault(); finish(null); }
+      if (e.key === 'Tab') {
+        const targets = [...overlay.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]')]
+          .filter(el => el.getClientRects().length > 0);
+        const first = targets[0], last = targets[targets.length - 1];
+        if (!first) { e.preventDefault(); overlay.querySelector('.modal').focus(); }
+        else if (e.shiftKey && (document.activeElement === first || !overlay.contains(document.activeElement))) {
+          e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !overlay.contains(document.activeElement))) {
+          e.preventDefault(); first.focus();
+        }
+      }
       if (e.key === 'Enter' && allowEnter && document.activeElement.tagName !== 'TEXTAREA') {
         overlay.querySelector('[data-act=ok]').click();
       }
@@ -1546,7 +1713,7 @@ function buildModal({ title, desc, bodyHTML, submitText, danger, wide, allowEnte
     // 自动 focus 第一个 input
     setTimeout(() => {
       const first = overlay.querySelector('input,textarea');
-      if (first) first.focus();
+      if (overlay.isConnected) (first || overlay.querySelector('[data-act=cancel]')).focus();
     }, 50);
   });
 }
@@ -1613,8 +1780,12 @@ async function switchPage(name, force = false) {
   const seq = ++pageSeq;
   currentPage = name;
 
-  document.querySelectorAll('nav button').forEach(b =>
-    b.classList.toggle('active', b.dataset.page === name));
+  document.querySelectorAll('nav button').forEach(button => {
+    const selected = button.dataset.page === name;
+    button.classList.toggle('active', selected);
+    if (selected) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
   const titleEl = document.getElementById('pageTitle');
   if (titleEl) titleEl.textContent = PAGE_TITLES[name] || name;
   const main = document.getElementById('main');
@@ -1628,7 +1799,7 @@ async function switchPage(name, force = false) {
     html = await pages[name]();
   } catch (e) {
     clearTimeout(slow);
-    if (seq === pageSeq) main.innerHTML = '<div class="empty">' + e.message + '</div>';
+    if (seq === pageSeq) main.innerHTML = '<div class="empty" role="alert">页面加载失败：' + escapeHtml(e.message) + '</div>';
     return;
   }
   clearTimeout(slow);
@@ -1682,9 +1853,9 @@ function toggleSidebar() {
   try { localStorage.setItem('sbCollapsed', el.classList.contains('collapsed') ? '1' : ''); } catch (e) {}
 }
 
-function renderShell() {
-  const collapsed = (() => { try { return localStorage.getItem('sbCollapsed') === '1'; } catch (e) { return false; } })();
-  document.getElementById('app').innerHTML = `
+function renderShellMarkup(collapsed) {
+  return `
+    <a class="skip-link" href="#main">跳到主要内容</a>
     <aside class="sidebar${collapsed ? ' collapsed' : ''}">
       <div class="side-top">
         <button class="icon-btn" onclick="toggleSidebar()" title="收起 / 展开" aria-label="收起或展开侧边栏">
@@ -1692,7 +1863,7 @@ function renderShell() {
         </button>
         <span class="brand-text"><span class="spark"></span>gemini-web2api</span>
       </div>
-      <nav>
+      <nav aria-label="主要导航">
         ${NAV.map(([k, label]) => `
           <button data-page="${k}" onclick="switchPage('${k}')" title="${label}">
             <svg viewBox="0 0 24 24">${ICONS[k]}</svg>
@@ -1712,14 +1883,20 @@ function renderShell() {
       <div class="topbar">
         <h1 class="page-title" id="pageTitle">概览</h1>
         <div class="topbar-right">
-          <button class="btn" id="langBtn" onclick="toggleLang()" style="padding:5px 10px;font-size:12px" title="切换语言 / Switch language">EN</button>
-          <span class="dot" id="healthDot"></span>
-          <span class="muted" id="healthText">运行中</span>
+          <span class="service-status" role="status">
+            <span class="dot pending" id="healthDot" aria-hidden="true"></span>
+            <span id="healthText">正在连接…</span>
+          </span>
         </div>
       </div>
-      <main id="main"></main>
+      <main id="main" tabindex="-1"></main>
     </div>
   `;
+}
+
+function renderShell() {
+  const collapsed = (() => { try { return localStorage.getItem('sbCollapsed') === '1'; } catch (e) { return false; } })();
+  document.getElementById('app').innerHTML = renderShellMarkup(collapsed);
   switchPage('dashboard');
   loadSideStat();
 }
@@ -1736,7 +1913,7 @@ async function loadSideStat() {
     ]);
     const dot = document.getElementById('healthDot');
     const ht = document.getElementById('healthText');
-    if (dot) dot.classList.toggle('bad', !root);
+    if (dot) { dot.classList.remove('pending'); dot.classList.toggle('bad', !root); }
     if (ht) ht.textContent = root ? '运行中' : '无法连接';
     box.innerHTML = [
       ['版本', root ? 'v' + root.version : '—'],
@@ -1749,344 +1926,54 @@ async function loadSideStat() {
 
 function renderLogin() {
   document.getElementById('app').innerHTML = `
-    <div class="login-box">
+    <form class="login-box" onsubmit="doLogin(event)">
       <h1><span class="spark" style="width:20px;height:20px;background:var(--g-sweep);
         border-radius:4px;display:inline-block;
         clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)"></span>
         gemini-web2api</h1>
-      <input id="tokenInput" type="password" placeholder="管理员 Token" />
-      <button class="btn" onclick="doLogin()">登录</button>
-      <div id="loginErr" class="err"></div>
-    </div>`;
+      <p class="lede" id="loginHint">登录后管理请求记录、代理出口和账号状态。</p>
+      <label for="tokenInput">管理员令牌</label>
+      <input id="tokenInput" type="password" placeholder="输入管理员令牌" autocomplete="off" aria-describedby="loginHint loginErr" required />
+      <button class="btn primary" id="loginBtn" type="submit">登录管理面板</button>
+      <div id="loginErr" class="err" role="alert"></div>
+    </form>`;
   document.getElementById('tokenInput').focus();
-  document.getElementById('tokenInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
 }
 
-async function doLogin() {
-  const tok = document.getElementById('tokenInput').value;
-  const r = await fetch('api/login', { method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: tok }) });
-  if (r.ok) renderShell();
-  else document.getElementById('loginErr').textContent = 'Token 错误';
-}
-
-// ── i18n（中 ⇄ 英）───────────────────────────────────────────────────────
-// 机制：一个 MutationObserver 盯 #app，内容一变就按整段文本节点/属性精确匹配
-// I18N_EN 词典替换成英文；切回中文时从 ZH_ORIG 里恢复原文。渲染逻辑一行不用改，
-// 只在最外面套一层翻译。插值文案（带数字/名字的）不精确匹配、保持中文，属可接受。
-const I18N_EN = {
-  'gemini-web2api 管理面板': 'gemini-web2api Admin Panel',
-  '概览': 'Overview',
-  '请求记录': 'Requests',
-  '代理池': 'Proxy Pool',
-  'Cookie 池': 'Cookie Pool',
-  '设置': 'Settings',
-  '运行中': 'Running',
-  '无法连接': 'Disconnected',
-  '收起 / 展开': 'Collapse / Expand',
-  '收起或展开侧边栏': 'Collapse or expand sidebar',
-  '退出登录': 'Log out',
-  '版本': 'Version',
-  '模型': 'Model',
-  '匿名': 'Anonymous',
-  '直连': 'Direct',
-  '管理员 Token': 'Admin Token',
-  '登录': 'Log in',
-  'Token 错误': 'Wrong token',
-  '24 小时请求': '24h Requests',
-  '成功率': 'Success rate',
-  '平均延迟': 'Avg latency',
-  '输入 Token': 'Input Tokens',
-  '输出 Token': 'Output Tokens',
-  '请求量与延迟': 'Requests & latency',
-  '最近 24 小时': 'Last 24 hours',
-  '最近 7 天': 'Last 7 days',
-  '最近 30 天': 'Last 30 days',
-  '距离封禁红线': 'Distance to ban threshold',
-  '刷新': 'Refresh',
-  '还没有任何请求经过': 'No requests have passed through yet',
-  '这条线是怎么来的': 'Where this line comes from',
-  '连通性诊断': 'Connectivity test',
-  '测试一次': 'Test once',
-  '自动选择（按调度规则）': 'Auto-select (by scheduling rules)',
-  '直连主机 IP': 'Direct (host IP)',
-  '打一次真实请求看是否通。不消耗限流配额、不写入请求记录。返回 302/429 就是出口进了黑名单，该换 IP。':
-    'Fire one real request to see if it goes through. Consumes no rate-limit quota and writes no request record. A 302/429 means the egress is blacklisted — time to switch IP.',
-  '正在测试…（最多等 30 秒）': 'Testing... (up to 30s)',
-  '结果': 'Result',
-  '被风控（302）': 'Blocked (302)',
-  '被限流（429）': 'Rate-limited (429)',
-  '上游错误': 'Upstream error',
-  '网络层错误': 'Network-layer error',
-  '使用的 IP slot': 'IP slot used',
-  '指纹': 'Fingerprint',
-  '回复内容': 'Response',
-  '诊断说明': 'Diagnostic',
-  '上游响应片段': 'Upstream response snippet',
-  '按模型分组': 'By model',
-  '按出口分组': 'By egress',
-  '请求': 'Requests',
-  '成功': 'Success',
-  '平均': 'Avg',
-  '出口': 'Egress',
-  '暂无数据': 'No data',
-  '类型': 'Type',
-  '次数': 'Count',
-  '含义 / 该怎么办': 'Meaning / What to do',
-  '窗口内没有失败': 'No failures in this window',
-  '上游返回 200 但没有内容帧。实测是瞬时拒绝，隔几分钟自愈，跟频率/并发/累积次数都无关 —— 重试即可，不用调限流。':
-    'Upstream returned 200 but no content frames. Measured as a transient rejection that self-heals in a few minutes, unrelated to rate / concurrency / cumulative count — just retry, no need to adjust rate limits.',
-  '本地限流挡下的（slot 满）。要更高产能就在「代理池」加代理。':
-    'Blocked by local rate limiting (slots full). For more throughput, add proxies on the Proxy Pool page.',
-  '被 Google 重定向到 sorry/index，该出口 IP 进了黑名单。换代理，6-24 小时才恢复。':
-    'Redirected by Google to sorry/index; this egress IP is blacklisted. Switch proxies — recovery takes 6-24 hours.',
-  '上游直接 429。同样是出口 IP 嫌疑，换代理。':
-    'Upstream returned 429 directly. Again an egress-IP suspicion — switch proxies.',
-  '上游返回非 200 的其它状态码，可能是协议变更或临时故障。':
-    'Upstream returned a non-200 status code, possibly a protocol change or a temporary fault.',
-  '连不上代理 / DNS / TLS 握手失败。检查代理可用性 —— 实测代理服务商出口质量参差，劣质出口会连续失败。':
-    'Could not reach the proxy / DNS / TLS handshake failed. Check proxy availability — proxy provider egress quality varies, and bad egresses fail repeatedly.',
-  '客户端请求本身有问题（模型名不存在、传了不支持的字段）。':
-    'The client request itself is malformed (nonexistent model name, or an unsupported field was passed).',
-  '全部': 'All',
-  '失败': 'Failed',
-  '全部模型': 'All models',
-  '每页 25': '25 / page',
-  '每页 50': '50 / page',
-  '每页 100': '100 / page',
-  '每页 200': '200 / page',
-  '时间': 'Time',
-  '实际模型': 'Actual model',
-  '账号': 'Account',
-  '状态': 'Status',
-  '首字': 'TTFB',
-  '总用时': 'Total',
-  '输入': 'Input',
-  '输出': 'Output',
-  '接口': 'Endpoint',
-  '加载中...': 'Loading...',
-  '加载中…': 'Loading...',
-  '还没有请求记录': 'No request records yet',
-  '错误：': 'Error: ',
-  '最前': 'First',
-  '上一页': 'Previous',
-  '下一页': 'Next',
-  '最后': 'Last',
-  '服务端实际使用的模型与请求的不一致': 'The model actually used by the server differs from the one requested',
-  '+ 添加代理': '+ Add proxy',
-  '每个代理是一个独立 IP slot': 'Each proxy is an independent IP slot',
-  '名称': 'Name',
-  '代理 URL': 'Proxy URL',
-  '最近错误': 'Last error',
-  '操作': 'Actions',
-  '已启用': 'Enabled',
-  '已禁用': 'Disabled',
-  '禁用': 'Disable',
-  '启用': 'Enable',
-  '重置': 'Reset',
-  '删除': 'Delete',
-  '还没有代理。点「+ 添加代理」加一个。': 'No proxies yet. Click "+ Add proxy" to add one.',
-  '+ 导入 Cookie': '+ Import Cookie',
-  '每行一个 Google 登录态账号': 'One logged-in Google account per row',
-  '标签': 'Label',
-  '关键 Cookie': 'Key Cookies',
-  '最近成功': 'Last success',
-  '未命名': 'Unnamed',
-  '缺 TS': 'Missing TS',
-  '缺 __Secure-1PSIDTS，首次保活会尝试补发；失败请用 Firefox 重新导出': 'Missing __Secure-1PSIDTS; first keepalive will try to mint one. If that fails, re-export from Firefox',
-  '约 30 分钟过期，保活会自动换发': 'Expires in ~30 minutes; keepalive rotates it automatically',
-  '检测': 'Check',
-  '保活': 'Keep-alive',
-  '编辑': 'Edit',
-  'Cookie 池是空的。点「+ 导入 Cookie」加一个登录态账号。': 'The Cookie pool is empty. Click "+ Import Cookie" to add a logged-in account.',
-  '检测中…': 'Checking...',
-  '运行时配置': 'Runtime config',
-  '保存并生效': 'Save & apply',
-  '放弃修改': 'Discard changes',
-  '保存中…': 'Saving...',
-  '已保存并生效': 'Saved & applied',
-  '流量控制 · 每个 IP slot 独立计数': 'Rate limiting · counted per IP slot',
-  '重试与超时': 'Retry & timeout',
-  '请求行为': 'Request behavior',
-  '代理与 cookie 的降级行为': 'Proxy & cookie fallback behavior',
-  '数据与日志': 'Data & logs',
-  '并发': 'Concurrency',
-  '重试次数': 'Retry attempts',
-  '重试间隔（秒）': 'Retry interval (s)',
-  '上游超时（秒）': 'Upstream timeout (s)',
-  '默认模型': 'Default model',
-  'Prompt 字节上限': 'Prompt byte limit',
-  'TLS 指纹': 'TLS fingerprint',
-  'Gemini bl 版本': 'Gemini bl version',
-  '自动跟随 bl 版本': 'Auto-follow bl version',
-  '熔断冷却（分钟）': 'Circuit-breaker cooldown (min)',
-  '无可用代理时退回直连': 'Fall back to direct when no proxy is available',
-  'cookie 失效时降级匿名': 'Downgrade to anonymous when cookie fails',
-  '明细保留（天）': 'Detail retention (days)',
-  '打印请求日志': 'Log requests',
-  '同一时刻最多几个请求在飞，0=不限': 'Max requests in flight at once. 0 = unlimited',
-  '滚动 60 秒窗口上限，0=不限': 'Rolling 60-second window cap. 0 = unlimited',
-  '滚动 1 小时上限。实测单出口 80-180 次被拦，默认取下沿 80。按低速率跑可以调高很多——10 次/分钟连打 800 次没被拦过':
-    'Rolling 1-hour cap. A single egress was measured to get blocked at 80-180 requests, so the default takes the lower bound of 80. Running at a low rate can go much higher — 800 requests at 10/minute never got blocked.',
-  '含首次；流式已吐字后不再重试': 'Includes the first attempt; no retry once streaming has begun emitting',
-  '客户端没传 model 时用哪个': 'Which model to use when the client sends no model',
-  '超了直接返回 400 context_length_exceeded。上游的墙实测在约 13 万 UTF-8 字节，按字节算跟语言无关（同字节数下中英文表现一致，而 token 数差 1.9 倍）。不拦的话上游从尾部静默截断，被吃掉的正是刚问的那句。0=不限':
-    'Over the limit returns 400 context_length_exceeded directly. The upstream wall is measured at about 130,000 UTF-8 bytes; counted by bytes it is language-independent (Chinese and English behave identically at equal byte counts, though token counts differ by 1.9x). Without this cap the upstream silently truncates from the tail, and what gets eaten is exactly the message just asked. 0 = unlimited',
-  '上游前端版本号。请求大面积失败时先看这里是不是过期了': 'Upstream frontend version number. When requests fail en masse, check here first for staleness',
-  '每 6 小时从 /app 页面抓一次最新版本号，抓到就用抓到的。抓不到或格式不对就继续用上面钉的值':
-    'Fetches the latest version number from the /app page every 6 hours and uses it if found. If nothing is fetched or the format is wrong, keeps using the pinned value above',
-  '代理连续失败 5 次后歇多久再放回池子。实测被拦的出口 106-121 分钟自恢复，默认 120；0=不恢复，要去代理池页面手动重置':
-    'How long a proxy rests before returning to the pool after 5 consecutive failures. Blocked egresses were measured to self-recover in 106-121 minutes, so the default is 120. 0 = no auto-recovery, reset manually on the Proxy Pool page',
-  '关：直接返回 429，本机 IP 不会暴露给上游（默认）。开：可用性优先，但上游会看到本机真实出口':
-    'Off: return 429 directly, the host IP is never exposed to upstream (default). On: availability first, but upstream sees the host real egress',
-  '关：直接报错，能立刻发现该换号了（默认）。开：继续跑，但 3.1 Pro 会被静默降级成 3.5 Flash-Lite、思考链消失，客户端看不出来':
-    'Off: error out directly so you immediately notice it is time to swap accounts (default). On: keep running, but 3.1 Pro gets silently downgraded to 3.5 Flash-Lite and the thinking chain vanishes, invisible to the client',
-  '过期只删明细，聚合数据永久保留': 'Expiry deletes only detail rows; aggregate data is kept forever',
-  '显示': 'Show',
-  '隐藏': 'Hide',
-  '复制': 'Copy',
-  '生成随机 Key': 'Generate random key',
-  '自定义': 'Custom',
-  '调用示例': 'Example request',
-  '部署配置': 'Deployment config',
-  '监听': 'Listen',
-  '数据库': 'Database',
-  'Cookie 播种文件': 'Cookie seed file',
-  '面板鉴权': 'Panel auth',
-  '未配置': 'Not configured',
-  '已开启': 'On',
-  '未设 token': 'No token set',
-  '部署锁定': 'Deploy-locked',
-  '面板可轮换': 'Panel-rotatable',
-  'compose 的 ports + --port': 'compose ports + --port',
-  'compose 的 volumes + --db': 'compose volumes + --db',
-  '启动时把文件内容导入 Cookie 池；之后从「Cookie 池」页面管理': 'Imports the file contents into the Cookie pool at startup; managed afterward from the "Cookie Pool" page',
-  'compose 的 ADMIN_TOKEN': 'compose ADMIN_TOKEN',
-  'compose 的 API_KEY': 'compose API_KEY',
-  'gemini-web2api-go · 单二进制 · SQLite · Chrome 146 指纹 · tiktoken cl100k_base 计费':
-    'gemini-web2api-go · single binary · SQLite · Chrome 146 fingerprint · tiktoken cl100k_base billing',
-  '取消': 'Cancel',
-  '确定': 'OK',
-  '提交': 'Submit',
-  '添加代理': 'Add proxy',
-  '一个代理 = 一个独立 IP slot，享有独立的并发/RPM/RPH 配额。': 'One proxy = one independent IP slot with its own concurrency / RPM / RPH quota.',
-  '随便起，admin 面板里用来区分': 'Any name, just to tell them apart in the admin panel',
-  '支持 http:// / https:// / socks5:// 协议': 'Supports http:// / https:// / socks5:// protocols',
-  '删除代理': 'Delete proxy',
-  '导入 Cookie': 'Import Cookie',
-  '仅用于面板里区分账号，不参与请求。': 'Only used to tell accounts apart in the panel; not sent with requests.',
-  '整串粘贴（推荐）': 'Paste full string (recommended)',
-  '逐项填写': 'Fill in individually',
-  '整行粘贴，分号分隔。至少要含 SAPISID 和 __Secure-1PSID。 建议用 Firefox 导出（Chrome 新版本的会话绑在设备上，续不了）。DevTools 里全选复制即可， 多余的项会一并保留 —— 发得越全越像真实浏览器。':
-    'Paste the whole line, semicolon-separated. Must contain at least SAPISID and __Secure-1PSID. Prefer Firefox (recent Chrome binds the session to the device and it will not renew). Select-all and copy in DevTools; extra items are kept too — the more complete, the more it looks like a real browser.',
-  '备注': 'Note',
-  'Cookie 不能为空': 'Cookie cannot be empty',
-  'cookie 里没有 SAPISID，多半没复制全': 'No SAPISID in the cookie — you probably did not copy it all',
-  '导入': 'Import',
-  '只改标签和备注，不动 cookie 本身。要换 cookie 请删掉重新导入。': 'Edits only the label and note, not the cookie itself. To replace the cookie, delete and re-import.',
-  '账号邮箱': 'Account email',
-  '可留空': 'Optional',
-  '例如账号邮箱，可留空': 'e.g. account email, optional',
-  '删除 Cookie': 'Delete Cookie',
-  '退出后需要重新输入管理员 token 才能进来。服务本身不受影响，API 照常提供。': 'After logging out you must re-enter the admin token to get back in. The service itself is unaffected and the API keeps serving.',
-  '退出': 'Log out',
-  '生成新 Key': 'Generate new key',
-  '现有客户端在重新配置前将无法访问。确定继续？': 'Existing clients will be unable to access until reconfigured. Continue?',
-  '设置自定义 API Key': 'Set custom API Key',
-  '至少 20 字符。设置后所有客户端要更换为新 Key。': 'At least 20 characters. All clients must switch to the new key once set.',
-  '新 Key': 'New key',
-  '不能为空': 'Cannot be empty',
-  '代理已添加': 'Proxy added',
-  '已删除': 'Deleted',
-  '已重置失败计数': 'Failure count reset',
-  '已保存': 'Saved',
-  '已复制到剪贴板': 'Copied to clipboard',
-  '已复制（兼容模式）': 'Copied (fallback mode)',
-  '已生成新 Key': 'New key generated',
-  'Key 至少 20 字符': 'Key must be at least 20 characters',
-  'Key 已更新': 'Key updated',
-};
-let LANG = (() => { try { return localStorage.getItem('lang') === 'en' ? 'en' : 'zh'; } catch (e) { return 'zh'; } })();
-const ZH_ORIG = new WeakMap();
-const I18N_ATTRS = ['title', 'placeholder', 'aria-label'];
-
-function translateTree(root, toEN) {
-  // 规整：trim + 把内部换行/缩进折成单空格，好跟词典 key 精确对上（源码里跨行的句子
-  // 在 DOM 里是一个含换行+缩进的文本节点）。命中就整段换成英文、原文存起来供切回。
-  const norm = s => s.trim().replace(/\s+/g, ' ');
-  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let n;
-  while ((n = w.nextNode())) {
-    const key = norm(n.nodeValue);
-    if (!key) continue;
-    if (toEN) {
-      const en = I18N_EN[key];
-      if (en) {
-        if (!ZH_ORIG.has(n)) ZH_ORIG.set(n, n.nodeValue);
-        n.nodeValue = en;
-      }
-    } else if (ZH_ORIG.has(n)) {
-      n.nodeValue = ZH_ORIG.get(n);
-      ZH_ORIG.delete(n);
-    }
+async function doLogin(event) {
+  if (event) event.preventDefault();
+  const button = document.getElementById('loginBtn');
+  if (button.disabled) return;
+  const input = document.getElementById('tokenInput');
+  if (!input.reportValidity()) return;
+  const error = document.getElementById('loginErr');
+  error.textContent = '';
+  button.disabled = true;
+  button.textContent = '正在登录…';
+  try {
+    const response = await fetch('api/login', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: input.value }) });
+    if (response.ok) renderShell();
+    else error.textContent = response.status === 401 ? '管理员令牌不正确，请重新输入。' : '登录失败：HTTP ' + response.status;
+  } catch (failure) {
+    error.textContent = '连接失败，请检查服务地址或网络后重试。';
+  } finally {
+    button.disabled = false;
+    button.textContent = '登录管理面板';
   }
-  const scope = root.querySelectorAll ? root.querySelectorAll('[title],[placeholder],[aria-label]') : [];
-  scope.forEach(el => {
-    I18N_ATTRS.forEach(attr => {
-      if (!el.hasAttribute(attr)) return;
-      const dz = 'data-zh-' + attr;
-      if (toEN) {
-        const en = I18N_EN[norm(el.getAttribute(attr))];
-        if (en && !el.hasAttribute(dz)) { el.setAttribute(dz, el.getAttribute(attr)); el.setAttribute(attr, en); }
-      } else if (el.hasAttribute(dz)) {
-        el.setAttribute(attr, el.getAttribute(dz)); el.removeAttribute(dz);
-      }
-    });
-  });
-}
-
-let i18nObserver = null;
-let i18nPending = false;
-function i18nApply() {
-  const app = document.getElementById('app');
-  if (!app) return;
-  if (i18nObserver) i18nObserver.disconnect();
-  translateTree(app, LANG === 'en');
-  if (i18nObserver) i18nObserver.observe(app, { childList: true, subtree: true, characterData: true });
-}
-function i18nSchedule() {
-  if (i18nPending || LANG !== 'en') return;
-  i18nPending = true;
-  requestAnimationFrame(() => { i18nPending = false; i18nApply(); });
-}
-function i18nInit() {
-  const app = document.getElementById('app');
-  if (!app) return;
-  i18nObserver = new MutationObserver(() => i18nSchedule());
-  i18nObserver.observe(app, { childList: true, subtree: true, characterData: true });
-  updateLangBtn();
-  if (LANG === 'en') i18nApply();
-}
-function updateLangBtn() {
-  const b = document.getElementById('langBtn');
-  if (b) b.textContent = LANG === 'en' ? '中' : 'EN';
-}
-function toggleLang() {
-  LANG = LANG === 'en' ? 'zh' : 'en';
-  try { localStorage.setItem('lang', LANG); } catch (e) {}
-  i18nApply();
-  updateLangBtn();
 }
 
 // boot — try fetching stats; if 401, login page
 (async () => {
-  const r = await fetch('api/stats?hours=1', { credentials: 'include' });
-  if (r.ok) renderShell();
-  else renderLogin();
-  i18nInit();
+  try {
+    const response = await fetch('api/stats?hours=1', { credentials: 'include' });
+    if (response.ok) renderShell();
+    else renderLogin();
+  } catch (error) {
+    renderLogin();
+    document.getElementById('loginErr').textContent = '无法连接服务，请检查网络后重试。';
+  }
 })();
 </script>
 </body>
