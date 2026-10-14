@@ -545,6 +545,7 @@ func checkAccountCookie(a CookieAccount) CookieCheck {
 		markAccountResult(a.ID, false, err.Error())
 		return CookieCheck{Detail: explainCookieFailure(err), ProxyName: name, TookMs: took}
 	}
+	bindAccountProxy(a.ID, a.ProxyID, picked.ID)
 	markAccountResult(a.ID, true, "")
 	detail := "登录态有效"
 	if extractSAPISID(a.Cookie) == "" {
@@ -568,12 +569,14 @@ func explainCookieFailure(err error) string {
 	}
 }
 
-// bindAccountProxy 记住这个账号这次用的出口，下次优先复用。
-func bindAccountProxy(accountID, proxyID int64) {
-	if accountID <= 0 {
+// bindAccountProxy 只为未绑定或原出口失效的账号记录新出口，不覆盖健康绑定。
+// 条件更新避免并发请求用旧快照覆盖已经建立的绑定。
+func bindAccountProxy(accountID, previousProxyID, proxyID int64) {
+	if accountID <= 0 || previousProxyID == proxyID || proxyUsableByID(previousProxyID) {
 		return
 	}
-	_, _ = getDB().Exec(`UPDATE accounts SET proxy_id=? WHERE id=?`, proxyID, accountID)
+	_, _ = getDB().Exec(`UPDATE accounts SET proxy_id=? WHERE id=? AND proxy_id=?`,
+		proxyID, accountID, previousProxyID)
 }
 
 // accountDisplayName 面板/记录里显示的账号名，没填标签就用 #id。

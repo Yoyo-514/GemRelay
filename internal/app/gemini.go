@@ -442,9 +442,7 @@ func streamGenerateWithFiles(prompt, latest string, mc ModelConfig, pending []pe
 			// 的绑定选的，而挑号会换（新加的号 last_used_at=0 排在最前，撞上坏号
 			// 就会换）。拿别人的出口覆盖当前号的绑定，等于每次撞上坏号就把好号的
 			// 粘性打散一次 —— 实测就是这么散掉的。
-			if acct.ProxyID == 0 || !proxyUsableByID(acct.ProxyID) {
-				bindAccountProxy(acct.ID, picked.ID)
-			}
+			bindAccountProxy(acct.ID, acct.ProxyID, picked.ID)
 			break
 		}
 		// 取不到 SNlM0e 基本等于这个 cookie 已失效（页面把我们当匿名用户了）。
@@ -455,15 +453,13 @@ func streamGenerateWithFiles(prompt, latest string, mc ModelConfig, pending []pe
 		// 只试一次，且只在这一轮。
 		if !rotatedOnce[acct.ID] {
 			rotatedOnce[acct.ID] = true
-			if _, _, rerr := rotateAccount(*acct); rerr == nil {
+			if _, _, rerr := rotateAccountOnProxy(*acct, picked); rerr == nil {
 				if fresh := accountByID(acct.ID); fresh != nil {
 					if tok2, err2 := getXSRF(fresh.Cookie, proxyURL); err2 == nil {
 						logf("[cookie] 账号 #%d 轮转后恢复可用", acct.ID)
 						acct = fresh
 						cookieStr, sapisid, xsrfToken = fresh.Cookie, extractSAPISID(fresh.Cookie), tok2
-						if fresh.ProxyID == 0 || !proxyUsableByID(fresh.ProxyID) {
-							bindAccountProxy(fresh.ID, picked.ID)
-						}
+						bindAccountProxy(fresh.ID, fresh.ProxyID, picked.ID)
 						break
 					}
 				}

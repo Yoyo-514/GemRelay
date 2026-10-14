@@ -246,6 +246,7 @@ const webUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
 // cid/rid/rcid/tok26 和 turn+1，供下一轮续接。
 func streamGenerateConv(prompt string, mc ModelConfig, conv *convState,
 	onDelta, onReasoning func(string)) (*StreamResult, error) {
+	previousProxyID := conv.proxyID
 	p, slotOK, slotErr := acquireSlot(conv.proxyID)
 	if !slotOK {
 		return &StreamResult{}, slotErr
@@ -391,6 +392,7 @@ func streamGenerateConv(prompt string, mc ModelConfig, conv *convState,
 		if pickedOK {
 			recordProxyResult(p.ID, true, "")
 		}
+		bindAccountProxy(conv.accountID, previousProxyID, p.ID)
 		return &StreamResult{
 			Emitted:          tracker.emitted,
 			EmittedReasoning: rtracker.emitted,
