@@ -11,7 +11,7 @@ Run commands from the repository root.
 ### Prebuilt binary
 
 Download the single-file executable for your platform from
-[Releases](https://github.com/Yoyo-514/gemrelay/releases) and run it directly:
+[Releases](https://github.com/Yoyo-514/GemRelay/releases) and run it directly:
 
 ```bash
 chmod +x gemrelay_*

@@ -10,7 +10,7 @@
 
 ### 下载预编译二进制
 
-从 [Releases](https://github.com/Yoyo-514/gemrelay/releases) 下载对应平台的单文件程序，直接运行：
+从 [Releases](https://github.com/Yoyo-514/GemRelay/releases) 下载对应平台的单文件程序，直接运行：
 
 ```bash
 chmod +x gemrelay_*
