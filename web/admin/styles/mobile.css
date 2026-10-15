@@ -1,0 +1,70 @@
+/* 手机以任务为中心：固定底部导航、完整纵向信息、单层页面滚动。 */
+@media (max-width: 600px) {
+  #app { min-height: 100dvh; }
+  .sidebar, .sidebar.collapsed { display: contents; }
+  .sidebar .side-top, .sidebar .side-foot { display: none; }
+  .sidebar nav {
+    position: fixed; inset: auto 0 0; z-index: 20;
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px; margin: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: var(--card); border-top: 1px solid var(--outline-soft); overflow: visible;
+  }
+  .sidebar nav button, .sidebar.collapsed nav button {
+    display: flex; flex-direction: column; justify-content: center; gap: 3px;
+    min-height: 54px; padding: 5px 2px; border-radius: 14px;
+    font-size: 11px; line-height: 1.4; white-space: normal; text-align: center;
+  }
+  .sidebar nav button svg { width: 21px; height: 21px; }
+  .sidebar .nav-label, .sidebar.collapsed .nav-label { display: block; }
+  .content { width: 100%; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .topbar { min-height: 64px; height: auto; padding: 10px 16px; gap: 12px; }
+  .topbar-right { gap: 6px; }
+  .icon-btn.mobile-logout { display: inline-flex; min-width: 44px; min-height: 44px; }
+  .service-status { font-size: 12px; padding: 5px 8px; }
+  main { min-width: 0; }
+  .panel h2 { align-items: flex-start; gap: 12px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+  .controls .badge { margin-right: 0 !important; }
+  .controls .btn { margin-left: auto; }
+  .btn, button { touch-action: manipulation; }
+  .page-fill { height: auto; min-height: 0; }
+  .table-scroll { max-height: none; overflow: visible; }
+  .table-scroll > table, .table-scroll > table.accounts-table, .table-scroll > #reqTable {
+    display: block; min-width: 0; width: 100%; table-layout: auto;
+  }
+  .table-scroll colgroup { display: none; }
+  .table-scroll thead {
+    position: absolute; width: 1px; height: 1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .table-scroll tbody { display: grid; }
+  .table-scroll tr {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px; padding: 20px 0; border-bottom: 1px solid var(--outline-soft);
+  }
+  .table-scroll tr:last-child { border-bottom: 0; }
+  .table-scroll td {
+    display: block; min-width: 0; border: 0; padding: 0;
+    white-space: normal; text-align: left; overflow-wrap: anywhere;
+  }
+  .table-scroll td[data-label]::before {
+    content: attr(data-label); display: block; margin-bottom: 4px;
+    color: var(--muted); font: 12px var(--sans);
+  }
+  .table-scroll .accounts-table td[data-label="标签"]::before { display: none; }
+  .table-scroll td[data-label="操作"], .table-scroll td[data-label="最近错误"],
+  .table-scroll td[data-label="代理 URL"], .table-scroll .empty { grid-column: 1 / -1; }
+  .table-scroll .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .table-scroll .truncate { overflow: visible; text-overflow: clip; }
+  .table-scroll .error-summary .pre { white-space: pre-wrap; }
+  .pager { align-items: flex-start; }
+  .pager-btns { width: 100%; flex-wrap: wrap; }
+  .cfg-item.check { gap: 10px; }
+  .cfg-item input[type=checkbox] { width: 24px; height: 24px; }
+  .cfg-actions .btn { flex: 1; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal { width: 100%; max-height: 90dvh; border-radius: 24px 24px 0 0; padding: 24px 20px calc(20px + env(safe-area-inset-bottom)); }
+  .modal > .actions { display: flex; flex-wrap: wrap; }
+  .modal > .actions .btn { flex: 1; }
+  .toast-stack { bottom: calc(88px + env(safe-area-inset-bottom)); }
+}

@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"io/fs"
 	"net/http"
 
 	"gemini-web2api/web/admin"
@@ -25,15 +26,13 @@ func handleAdminUI(w http.ResponseWriter, r *http.Request) {
 	} else {
 		path = path[len("/admin/"):]
 	}
-	f, err := admin.Files.Open(path)
+	data, err := fs.ReadFile(admin.Files, path)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	defer f.Close()
-	stat, _ := f.Stat()
-	data := make([]byte, stat.Size())
-	f.Read(data)
+	// 文件名不带内容指纹，部署新二进制后应重新验证，避免 HTML 与脚本版本错配。
+	w.Header().Set("Cache-Control", "no-cache")
 	switch {
 	case len(path) > 5 && path[len(path)-5:] == ".html":
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

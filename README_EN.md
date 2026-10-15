@@ -234,7 +234,35 @@ a specific URL's content — is not implemented yet).
 - **Cookie pool** — import multiple signed-in Google accounts; requests rotate through them **least-recently-used first**. One-click "check" tells you whether an account is still signed in, and **dead accounts are flagged in red** so you know which to re-import; `__Secure-1PSIDTS` is rotated automatically plus a 10-minute keepalive; each account is pinned to its own exit. The list shows redacted summaries only (cookie count / key entries / last 4 of SAPISID / failure count)
 - **Settings** — runtime config form (saved settings take effect immediately), API key rotation, read-only view of deploy-time config
 
-The frontend is a single HTML file and Chart.js is embedded in the binary, **not loaded from a CDN**, so the panel also works on air-gapped or intranet deployments.
+### Usage quota
+
+The Cookie pool's **Usage quota** column shows each account's remaining percentage and reset time
+for the Gemini web app's **5-hour / weekly** limits. Opening the page queries up to three accounts
+concurrently; there is no periodic polling. Refresh skips the server's 20-second cache. Disabled
+accounts remain queryable. Missing buckets and failed requests are not shown as zero quota.
+
+`GET /admin/api/quota[?account_id=N][&refresh=1]` uses the existing admin authentication.
+Without an account ID it selects an enabled account. Query failures return HTTP 200 with
+`ok:false` and `error`; an explicitly requested `account_id` is echoed even on failure.
+
+```json
+{"ok":true,"account":"my-account","account_id":1,"direct":false,
+ "five_hour":{"used_percent":63,"remain_percent":37,"reset_at":1792050755,"reset_in_sec":13504},
+ "weekly":{"used_percent":13,"remain_percent":87,"reset_at":1792486355,"reset_in_sec":503104},
+ "fetched_at":1792037251}
+```
+
+The lookup does not advance account rotation, change health or exit bindings, or consume generation
+rate-limit slots. It prefers the account's available proxy and respects `fallback_direct` when no
+proxy is usable. Successful results are cached for 20 seconds by actual account, cookie and exit
+identity; concurrent queries for the same identity share one upstream call. Failures are not cached.
+The reverse-engineered web RPC `jSf9Qc` and parsing criteria follow the MIT project
+[Nagi-ovo/voyager](https://github.com/Nagi-ovo/voyager) (`usageParsing.ts`). This independent endpoint
+can stop working after upstream changes or for accounts without the usage page; generation is unaffected.
+
+The frontend has an HTML shell, responsibility-specific [styles](web/admin/styles/) and
+[scripts](web/admin/scripts/). All assets, including Chart.js, are embedded in the binary,
+**not loaded from a CDN**, so no frontend build step or external asset connection is required.
 
 **Serving it under a path prefix needs no extra configuration**: every URL in the panel is relative, so forwarding `https://example.com/gemini/` to this service's `/` is enough to open `https://example.com/gemini/admin`. (Requesting `/admin` without the trailing slash 301s to `admin/` — relative URLs resolve against the document URL's *directory*, and the two forms differ by one level, so they have to be normalised first.)
 
@@ -334,6 +362,7 @@ Saving takes effect **immediately**, no restart. Values live in the database and
 | Temporary chat (`temporary_chat`) | off by default. When on, uses Gemini web's native **Temporary Chat** (`inner[45]=1`): the conversation never enters the account's chat list and isn't used for model training — cleaner than auto-delete, and it saves that extra delete request. Only meaningful signed-in; automatically inactive when server-side multi-turn is on (a temporary chat leaves no list entry, while multi-turn relies on the server keeping the conversation). |
 | Anonymous-first (`anon_first`) | off by default. When on, requests that don't need a signed-in session (plain text, no thinking, no tool, no image) go out anonymously without consuming a cookie account, saving account quota; only 3.1 Pro / 3.8 Flash / extended thinking / image gen / file upload etc. pick an account. When off, any request uses an account as long as the pool has one. |
 | Retry attempts / retry delay / upstream timeout | |
+| Strict model check (`strict_model`) | Off by default. A confirmed mismatch between the requested model and the upstream-reported name returns `429 insufficient_quota` with `code: model_downgraded` before streaming starts. An open Chat stream sends the same error classification; Responses emits `response.failed`, without a successful terminal event. Real-time streaming is preserved: earlier content may already have reached the client and cannot be retracted. Missing model evidence, unknown models and media tools are allowed through. Aliases and thinking tiers share the base-model check; thinking-level downgrades are not detected. No automatic account retry is added. A mismatch may also mean the account lacks access, not necessarily exhausted quota. |
 | Detail retention days | only request details expire; aggregates are kept forever |
 | TLS fingerprint | `chrome_146` (default) / `chrome_144` / `chrome_133` / `firefox_147` / `safari_16_0` / `safari_ios_17_0` |
 | Gemini `bl` version | upstream frontend build id, change it here when it expires |

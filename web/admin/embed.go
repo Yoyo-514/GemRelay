@@ -5,5 +5,5 @@ import "embed"
 
 // Files 包含管理页面及其静态脚本，不包含后端逻辑。
 //
-//go:embed index.html chart.umd.min.js
+//go:embed index.html chart.umd.min.js styles scripts
 var Files embed.FS

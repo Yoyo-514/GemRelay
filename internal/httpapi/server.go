@@ -168,11 +168,11 @@ func handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	// 带 tools 时正文过一道围栏闸门：```tool_call``` 块要完整文本才能解析，
 	// 直接转发会把围栏原文推给客户端，所以只放行确定不在围栏里的部分。
 	// 思考链跟围栏无关，两种情况都直接流。
-	var sse *sseWriter
+	var sse *ChatStream
 	var gate *gateway.ToolFenceGate
 	var onDelta, onReasoning func(string)
 	if stream {
-		sse = newSSEWriter(w, cid, created, modelName)
+		sse = NewChatStream(w, cid, created, modelName)
 		onReasoning = sse.SendReasoning
 		if len(tools) == 0 {
 			onDelta = sse.SendContent
@@ -214,6 +214,16 @@ func handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, 502, map[string]interface{}{"error": map[string]string{"message": "upstream error: " + err.Error()}})
+		return
+	}
+
+	if violation := gateway.StrictModelViolation(modelName, res); violation != nil {
+		gateway.RecordRequest("chat.completions", modelName, prompt, "", res, 429, violation.Error(), stream)
+		if sse != nil && sse.Started() {
+			sse.Fail(violation)
+		} else {
+			WriteGenerationError(w, violation)
+		}
 		return
 	}
 
@@ -519,16 +529,7 @@ func handleResponses(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		gateway.RecordRequest("responses", modelName, prompt, "", res, 502, err.Error(), stream)
 		if stream {
-			writeEvent("response.failed", map[string]interface{}{
-				"type": "response.failed",
-				"response": map[string]interface{}{
-					"id":     rid,
-					"object": "response",
-					"status": "failed",
-					"model":  modelName,
-					"error":  map[string]string{"message": err.Error()},
-				},
-			})
+			WriteResponseFailure(w, rid, modelName, err)
 			return
 		}
 		if ptl, ok := err.(*gateway.PromptTooLongError); ok {
@@ -548,6 +549,16 @@ func handleResponses(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, 502, map[string]interface{}{"error": map[string]string{"message": "upstream error: " + err.Error()}})
+		return
+	}
+
+	if violation := gateway.StrictModelViolation(modelName, res); violation != nil {
+		gateway.RecordRequest("responses", modelName, prompt, "", res, 429, violation.Error(), stream)
+		if stream {
+			WriteResponseFailure(w, rid, modelName, violation)
+		} else {
+			WriteGenerationError(w, violation)
+		}
 		return
 	}
 

@@ -1,0 +1,27 @@
+/* ── 运行时配置表单 ─────────────────────────────────────────────────
+   原来一项一整行（标签 | 输入 | 提示），12 项就是 12 行、右边三分之二空着，
+   整页拉到 2200px。改成按语义分组、组内自适应多列，标签压在输入框上方。 */
+.cfg-group { margin-bottom: 28px; }
+.cfg-group:last-of-type { margin-bottom: 0; }
+.cfg-group > h3 { font-size: 14px; font-weight: 600; color: var(--text-2);
+                  margin-bottom: 16px; padding-bottom: 10px;
+                  border-bottom: 1px solid var(--outline-soft); }
+.cfg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,220px), 1fr));
+            gap: 16px 18px; }
+.cfg-toggle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,280px), 1fr));
+                   gap: 12px; margin-top: 18px; }
+.cfg-item { min-width: 0; }
+.cfg-item > label { display: block; font-size: 14px; font-weight: 500; color: var(--text-2); margin-bottom: 7px; }
+.cfg-item input[type=text], .cfg-item input[type=number], .cfg-item select { width: 100%; }
+.cfg-item.wide { grid-column: 1 / -1; }
+.cfg-item.check { display: grid; grid-template-columns: minmax(0,1fr) auto; align-content: start;
+                  gap: 8px 14px; padding: 15px 16px; background: var(--bg); border-radius: 12px; }
+.cfg-item.check > label { margin: 0; align-self: center; cursor: pointer; }
+.cfg-item input[type=checkbox] { width: 18px; height: 18px; flex: none;
+                                 accent-color: var(--nav-on-fg); }
+.rthint { color: var(--muted); font-size: 13px; line-height: 1.65; margin-top: 7px; overflow-wrap: anywhere; }
+.cfg-item.check .rthint { grid-column: 1 / -1; margin: 0; }
+.cfg-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 24px;
+               padding-top: 18px; border-top: 1px solid var(--outline-soft); }
+.cfg-actions [role=status] { flex-basis: 100%; font-size: 13px; }
+.settings-layout { grid-template-columns: minmax(0,2fr) minmax(280px,1fr); }

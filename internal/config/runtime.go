@@ -13,7 +13,7 @@ import (
 // 取值优先级：面板改过的（存 kv 表） > config.json / CLI flag > 内置默认。
 //
 // 加字段必读：面板保存走整体反序列化（admin.go 的 Decode(&RuntimeConfig)），而前端
-// saveRtCfg 只按 admin_ui 的 RT_GROUPS 拼 PUT body。新加的字段必须同步进 RT_GROUPS，
+// saveRtCfg 只按管理脚本中的 RT_GROUPS 拼 PUT body。新加的字段必须同步进字段清单，
 // 否则它不在 body 里、每次点「保存并生效」都被解成零值冲掉（multi_turn 就这么被静默
 // 重置过，连 config.json 里设的都白设，见 #27）。
 type RuntimeConfig struct {
@@ -57,6 +57,8 @@ type RuntimeConfig struct {
 	// 取代 auto_delete_conversation（省掉删除 RPC）。只登录态有意义，与 multi_turn 冲突
 	// （multi_turn 开着时不发）。默认 false，见 temporaryChatEligible。
 	TemporaryChat bool `json:"temporary_chat"`
+	// StrictModel 开启后拒绝已确认的模型不匹配；流式已发送的内容无法撤回。
+	StrictModel bool `json:"strict_model"`
 }
 
 const RuntimeConfigKey = "runtime_config"

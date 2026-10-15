@@ -70,6 +70,7 @@ func NewHandler() http.Handler {
 		mux.HandleFunc("/admin/api/cookies", requireAuth(HandleAdminCookies))
 		mux.HandleFunc("/admin/api/cookies/", requireAuth(handleAdminCookieItem))
 		mux.HandleFunc("/admin/api/test", requireAuth(handleAdminTest))
+		mux.HandleFunc("/admin/api/quota", requireAuth(handleAdminQuota))
 	}
 
 	return mux

@@ -1,0 +1,39 @@
+@media (max-width: 1100px) { .grid-main { grid-template-columns: 1fr; } }
+ @media (max-width: 900px) {
+  #app { flex-direction: column; }
+  .sidebar, .sidebar.collapsed { width: 100%; flex-basis: auto; height: auto;
+                                 position: static; padding: 8px 12px; }
+  .side-top { height: 48px; }
+  .sidebar nav { flex-direction: row; overflow-x: auto; margin-top: 2px; }
+  .sidebar.collapsed nav button { padding: 10px 16px; }
+  .sidebar.collapsed .nav-label { display: inline; }
+  .side-foot { display: none; }
+  .topbar { padding: 0 14px; }
+  main { padding: 4px 14px 28px; }
+  .grid-2 { grid-template-columns: 1fr; }
+   .chart-wrap { height: 210px; }
+   .page-fill { height: auto; min-height: 60vh; }
+   .table-scroll { max-height: 65vh; }
+ }
+ @media (max-width: 600px) {
+   body { font-size: 16px; }
+   .topbar { padding: 0 16px; }
+   .page-title { font-size: 21px; }
+   main { padding: 4px 12px 24px; }
+   .panel, .card { padding: 18px 16px; }
+   .grid-2, .settings-layout { grid-template-columns: minmax(0,1fr); }
+   .cfg-grid, .cfg-toggle-grid { grid-template-columns: minmax(0,1fr); }
+   .kpi-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+   .kpi { padding: 14px; }
+   select, input[type=text], input[type=password], input[type=number], textarea { font-size: 16px; }
+   .btn, .controls button { min-height: 44px; }
+   .controls { width: 100%; }
+   .controls select { flex: 1; min-width: 120px; }
+   .modal-overlay { padding: 12px; }
+   .modal { padding: 22px 18px; max-height: calc(100dvh - 24px); }
+   .login-box { margin: 8vh auto; padding: 28px 24px; }
+   .toast-stack { left: 16px; right: 16px; bottom: 16px; width: auto; }
+ }
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

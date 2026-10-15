@@ -1,0 +1,55 @@
+/* ── Gemini 设计语言（亮色）────────────────────────────────────────────
+   照 gemini.google.com 本体：页面是带蓝调的白(#F8FAFD)，卡片纯白**不描边**，
+   靠底色反差和 16px 圆角分离——满屏描边会让页面变成一堆盒子，这是最不像
+   Gemini 的做法。侧栏与页面同色、无分隔线，可折叠；选中态是 Material 3 的
+   secondary-container(#D3E3FD) 配 #0B57D0。
+   品牌三色（蓝→紫→粉）全站只出现在一个地方：那条封禁红线轨道。 */
+:root {
+  --g-blue: #4285F4;
+  --g-purple: #9B72CB;
+  --g-pink: #D96570;
+  --g-sweep: linear-gradient(90deg, #4285F4 0%, #9B72CB 58%, #D96570 100%);
+
+  --bg: #F8FAFD;
+  --card: #FFFFFF;
+  --surface-hi: #EFF3FA;
+  --surface-press: #E2E8F1;
+  --outline: #D5DAE1;
+  --outline-soft: #E8ECF1;
+  --nav-on: #D3E3FD;
+  --nav-on-fg: #0B57D0;
+
+  --text: #1F1F1F;
+  --text-2: #3C4043;
+  --muted: #5F6368;
+  --ok: #146C2E;
+  --ok-bg: #E6F4EA;
+  --fail: #B3261E;
+  --fail-bg: #FCEEEE;
+  --warn: #8F5000;
+  --warn-bg: #FDF0E0;
+
+  --sb-w: 244px;
+  --sb-w-collapsed: 72px;
+  --topbar-h: 60px;
+  --r-card: 16px;
+  --r-pill: 999px;
+  --sans: "Google Sans Text", "Google Sans", "Product Sans", -apple-system,
+          BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC",
+          "Microsoft YaHei", sans-serif;
+  --mono: "Roboto Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --shadow: 0 1px 2px rgba(60,64,67,.06), 0 1px 3px 1px rgba(60,64,67,.05);
+  --focus: 0 0 0 3px rgba(11,87,208,.16);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+#app { display: flex; min-height: 100vh; }
+::selection { background: var(--nav-on); color: var(--text); }
+* { scrollbar-width: thin; scrollbar-color: var(--outline) transparent; }
+input, textarea { caret-color: var(--nav-on-fg); }
+a { text-underline-offset: .2em; }
+button, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--nav-on-fg); outline-offset: 3px; }

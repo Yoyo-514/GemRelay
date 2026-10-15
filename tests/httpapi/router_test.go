@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
 	"gemini-web2api/internal/config"
 	"gemini-web2api/internal/httpapi"
+	"gemini-web2api/web/admin"
 )
 
 const apiKey = "sk-test-layout-key-for-router"
@@ -95,6 +98,11 @@ func TestEmbeddedAdminAssets(t *testing.T) {
 		{"/admin", "", "", 301},
 		{"/admin/", "text/html", "<!DOCTYPE html>", 200},
 		{"/admin/chart.umd.min.js", "application/javascript", "Chart", 200},
+		{"/admin/styles/base.css", "text/css", ":root", 200},
+		{"/admin/scripts/app.js", "application/javascript", "fetch", 200},
+		{"/admin/scripts/pages/cookies/quota.js", "application/javascript", "api/quota?account_id=", 200},
+		{"/admin/scripts/pages/settings/fields.js", "application/javascript", "strict_model", 200},
+		{"/admin/scripts", "", "", 404},
 		{"/admin/missing.js", "", "", 404},
 	} {
 		t.Run(c.path, func(t *testing.T) {
@@ -121,5 +129,50 @@ func TestAdminCanBeDisabled(t *testing.T) {
 	router(t, false).ServeHTTP(w, httptest.NewRequest("GET", "/admin/", nil))
 	if w.Code != 404 {
 		t.Fatalf("禁用管理端仍可访问: %d", w.Code)
+	}
+}
+
+func TestAdminAssetReferences(t *testing.T) {
+	handler := router(t, true)
+	body, err := admin.Files.ReadFile("index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	refs := regexp.MustCompile(`(?:src|href)="([^"]+)"`).FindAllSubmatch(body, -1)
+	if len(refs) < 3 {
+		t.Fatal("页面资源引用缺失")
+	}
+	for _, ref := range refs {
+		path := string(ref[1])
+		if strings.HasPrefix(path, "/") || strings.Contains(path, ":") || strings.Contains(path, "..") {
+			t.Errorf("管理资源应使用本地相对路径: %s", path)
+		}
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest("GET", "/admin/"+path, nil))
+		if w.Code != 200 || w.Body.Len() == 0 {
+			t.Errorf("资源不可读: %s: %d", path, w.Code)
+		}
+	}
+}
+
+func TestRuntimeFieldsAreEditable(t *testing.T) {
+	body, err := admin.Files.ReadFile("scripts/pages/settings/fields.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fields := make(map[string]int)
+	for _, match := range regexp.MustCompile(`k: '([^']+)'`).FindAllSubmatch(body, -1) {
+		fields[string(match[1])]++
+	}
+	typeOf := reflect.TypeFor[config.RuntimeConfig]()
+	for i := 0; i < typeOf.NumField(); i++ {
+		name := typeOf.Field(i).Tag.Get("json")
+		if fields[name] != 1 {
+			t.Errorf("运行时配置 %q 应恰好对应一个可编辑字段，实际 %d", name, fields[name])
+		}
+		delete(fields, name)
+	}
+	if len(fields) != 0 {
+		t.Errorf("前端包含后端不存在的运行时字段: %v", fields)
 	}
 }

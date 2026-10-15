@@ -34,6 +34,7 @@ func InitRuntimeConfig() {
 		AutoDeleteConversation: config.Startup().AutoDeleteConversation,
 		AnonFirst:              config.Startup().AnonFirst,
 		TemporaryChat:          config.Startup().TemporaryChat,
+		StrictModel:            config.Startup().StrictModel,
 	}
 	if raw := storage.GetValue(config.RuntimeConfigKey); raw != "" {
 		saved := base

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理面板行为与视觉测试</title>
+  <link rel="stylesheet" href="../../web/admin/styles/base.css">
+  <link rel="stylesheet" href="../../web/admin/styles/layout.css">
+  <link rel="stylesheet" href="../../web/admin/styles/components.css">
+  <link rel="stylesheet" href="../../web/admin/styles/pages/dashboard.css">
+  <link rel="stylesheet" href="../../web/admin/styles/pages/settings.css">
+  <link rel="stylesheet" href="../../web/admin/styles/pages/login.css">
+  <link rel="stylesheet" href="../../web/admin/styles/components/modal.css">
+  <link rel="stylesheet" href="../../web/admin/styles/pages/cookies.css">
+  <link rel="stylesheet" href="../../web/admin/styles/responsive.css">
+  <link rel="stylesheet" href="../../web/admin/styles/mobile.css">
+  <script src="../../web/admin/scripts/core.js" defer></script>
+  <script src="../../web/admin/scripts/components/modal.js" defer></script>
+  <script src="../../web/admin/scripts/components/errors.js" defer></script>
+  <script src="../../web/admin/scripts/pages/dashboard.js" defer></script>
+  <script src="../../web/admin/scripts/pages/requests.js" defer></script>
+  <script src="../../web/admin/scripts/pages/proxies.js" defer></script>
+  <script src="../../web/admin/scripts/pages/cookies/view.js" defer></script>
+  <script src="../../web/admin/scripts/pages/cookies/quota.js" defer></script>
+  <script src="../../web/admin/scripts/pages/cookies/import.js" defer></script>
+  <script src="../../web/admin/scripts/pages/cookies/actions.js" defer></script>
+  <script src="../../web/admin/scripts/pages/settings/view.js" defer></script>
+  <script src="../../web/admin/scripts/pages/settings/fields.js" defer></script>
+  <script src="../../web/admin/scripts/pages/settings/runtime.js" defer></script>
+  <script src="../../web/admin/scripts/pages/settings/apikey.js" defer></script>
+  <script src="../../web/admin/scripts/shell.js" defer></script>
+  <script src="../../web/admin/scripts/auth.js" defer></script>
+  <!-- 只测试真实渲染函数与 DOM，不加载会访问后台的生产启动脚本。 -->
+  <script src="admin-ui.js" defer></script>
+</head>
+<body><div id="app"></div></body>
+</html>

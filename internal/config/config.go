@@ -51,6 +51,8 @@ type Config struct {
 	// RPC）。只登录态有意义（匿名本就不落账号）。与 multi_turn 冲突：multi_turn 开着时不发，
 	// 见 temporaryChatEligible。默认 false。
 	TemporaryChat bool `json:"temporary_chat"`
+	// 严格模型校验：上游自报模型与请求不符时明确失败。默认关闭。
+	StrictModel bool `json:"strict_model"`
 }
 
 var cfg Config

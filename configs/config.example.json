@@ -1,4 +1,5 @@
 {
+  "strict_model": false,
   "port": 8083,
   "host": "0.0.0.0",
   "db_path": "./data/gemini.db",

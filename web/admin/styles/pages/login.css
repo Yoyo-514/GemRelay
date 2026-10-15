@@ -1,0 +1,16 @@
+/* ── 登录 ───────────────────────────────────────────────────────────── */
+/* align-self 不能省：#app 是 flex 容器，登录态下 .login-box 是唯一子项，
+   默认 align-items:stretch 会把它拉到容器满高（100vh 减上下 margin），
+   卡片底下就空出一大片。这里让它按内容高度，横向仍靠 auto margin 居中。 */
+ .login-box { align-self: flex-start; width: 420px; max-width: 92vw;
+             margin: 16vh auto; background: var(--card);
+             border-radius: 28px; padding: 34px 32px;
+             box-shadow: 0 1px 3px rgba(60,64,67,.16), 0 8px 28px rgba(60,64,67,.1); }
+ .login-box h1 { font-size: 20px; font-weight: 600; margin-bottom: 12px;
+                display: flex; align-items: center; gap: 10px; }
+ .login-box input { width: 100%; margin-bottom: 14px; padding: 12px 15px; }
+ .login-box label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 500; }
+.login-box .lede { margin-bottom: 24px; }
+#loginErr { min-height: 21px; }
+.login-box .btn { width: 100%; text-align: center; background: var(--nav-on-fg); color: #fff; }
+.login-box .btn:hover { background: #0A4FBC; }

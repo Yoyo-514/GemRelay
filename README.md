@@ -229,7 +229,31 @@ Claude Code / Cursor 这类 MCP 客户端能「用 Gemini 去搜网」，返回*
 - **Cookie 池** — 导入多个 Google 登录态账号，请求按**最久未用优先**自动轮转。每个账号一键「检测」是否仍是登录态，**失效的账号标红提示重导**；自动换发 `__Secure-1PSIDTS` + 每 10 分钟保活；每个账号粘住自己的出口。列表只显示脱敏摘要（cookie 数 / 关键项 / SAPISID 末 4 位 / 失败次数）
 - **设置** — 运行时配置表单（保存即生效）+ API Key 轮换 + 部署期配置只读展示
 
-面板前端是单个 HTML，Chart.js 随二进制 embed，**不走 CDN**——内网/离线部署也能开。
+### 用量额度
+
+Cookie 池的「用量额度」列逐账号显示 Gemini 网页端 **5 小时窗口 / 每周**两档剩余百分比与重置时间。
+打开页面时查询，最多三路并发；不定时轮询。「刷新额度」会跳过服务端 20 秒缓存。
+停用账号也能查询；缺失档位显示「未提供」，查询失败不会显示为 0%。
+
+也可调用 `GET /admin/api/quota[?account_id=N][&refresh=1]`，沿用管理接口鉴权。
+不传账号时自动选择启用账号；失败返回 HTTP 200 与 `ok:false`、`error`，指定账号的失败也回填 `account_id`。
+
+```json
+{"ok":true,"account":"my-account","account_id":1,"direct":false,
+ "five_hour":{"used_percent":63,"remain_percent":37,"reset_at":1792050755,"reset_in_sec":13504},
+ "weekly":{"used_percent":13,"remain_percent":87,"reset_at":1792486355,"reset_in_sec":503104},
+ "fetched_at":1792037251}
+```
+
+查询走旁路：不推进账号轮转，不写健康度或账号出口绑定，不占生成请求的限流 slot。
+优先使用账号绑定的可用代理；无健康代理时遵守 `fallback_direct`，不会绕过关闭的直连回退开关。
+成功结果按实际账号、Cookie 与出口身份缓存 20 秒，同账号并发查询合并；失败不缓存。
+数据来自逆向的网页端 RPC `jSf9Qc`，解析判据参考 MIT 项目
+[Nagi-ovo/voyager](https://github.com/Nagi-ovo/voyager) 的 `usageParsing.ts`。
+上游改版或账号未开放额度页面时可能不可用，不影响生成接口。
+
+面板前端按职责拆为 HTML 外壳、[样式](web/admin/styles/)和[脚本](web/admin/scripts/)，
+Chart.js 与全部资源随二进制 embed，**不走 CDN**——内网/离线部署也能开，不需要前端构建工具。
 
 **反代到子路径不用额外配置**：面板里的地址全是相对的，把 `https://example.com/gemini/`
 转发到本服务的 `/` 就能用 `https://example.com/gemini/admin` 打开。（访问不带尾斜杠的
@@ -362,6 +386,7 @@ curl http://127.0.0.1:8083/v1/chat/completions \
 | 临时对话（`temporary_chat`） | 默认关。开启后走 Gemini 网页端原生「临时对话」：会话压根不进账号的会话列表、不用于模型训练，比「自动删会话」更干净，还省掉那次删除请求。只登录态有意义；开了「服务端多轮续接」时自动不生效（临时对话不留列表，多轮要靠服务端留会话）。 |
 | 匿名优先（`anon_first`） | 默认关。开启后不需要登录态能力的请求（纯文本、非思考、无工具、不带图）走匿名、不占用 cookie 账号，省账号额度；用到 3.1 Pro / 3.8 Flash / 扩展思考 / 生图 / 传文件这些才挑号。关掉则只要池里有号就一律用号。 |
 | 重试次数 / 重试间隔 / 上游超时 | |
+| 严格模型校验（`strict_model`） | 默认关。开启后，响应帧中自报的模型与请求不符时明确失败：未开流返回 `429 insufficient_quota`、`code: model_downgraded`；Chat 已开流发送同分类错误后结束，Responses 发送 `response.failed`，不再发送成功终态。保留实时流式，报错前可能已经发出部分正文，无法撤回。没有自报模型、未知模型或媒体工具不参与判断。别名和思考档共用基础模型判据，不保证识别思考级别被降低。不会自动换号重试；不匹配也可能是账号尚未开放该模型，不一定是额度耗尽。 |
 | 明细保留天数 | 过期只删明细，聚合数据永久保留 |
 | TLS 指纹 | `chrome_146`（默认）/ `chrome_144` / `chrome_133` / `firefox_147` / `safari_16_0` / `safari_ios_17_0` |
 | Gemini `bl` 版本 | 上游前端版本号，过期时改这里 |

@@ -1,0 +1,97 @@
+/* ── 侧栏 ───────────────────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sb-w); flex: 0 0 var(--sb-w); padding: 10px 12px 14px;
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+  transition: width .2s cubic-bezier(.2,0,0,1), flex-basis .2s cubic-bezier(.2,0,0,1);
+}
+.sidebar.collapsed { width: var(--sb-w-collapsed); flex-basis: var(--sb-w-collapsed); }
+.icon-btn.mobile-logout { display: none; }
+.side-top { display: flex; align-items: center; gap: 6px; height: var(--topbar-h); }
+.icon-btn {
+  all: unset; cursor: pointer; width: 40px; height: 40px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--r-pill); color: var(--text-2); transition: background .15s;
+}
+.icon-btn:hover { background: var(--surface-press); }
+.icon-btn:focus-visible { outline: 2px solid var(--g-blue); outline-offset: 2px; }
+.brand-text {
+  display: flex; align-items: center; gap: 9px; font-size: 15px;
+  color: var(--text-2); white-space: nowrap; overflow: hidden;
+}
+.spark {
+  width: 20px; height: 20px; flex: none; background: var(--g-sweep);
+  clip-path: polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);
+}
+.sidebar.collapsed .brand-text { display: none; }
+
+.sidebar nav { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+.sidebar nav button {
+  all: unset; cursor: pointer; display: flex; align-items: center; gap: 14px;
+  padding: 10px 16px; border-radius: var(--r-pill); color: var(--text-2);
+  font-size: 14px; font-family: var(--sans); white-space: nowrap;
+  transition: background .15s;
+}
+.sidebar nav button svg { width: 20px; height: 20px; flex: none; fill: currentColor; opacity: .75; }
+.sidebar nav button:hover { background: var(--surface-press); }
+.sidebar nav button.active { background: var(--nav-on); color: var(--nav-on-fg); font-weight: 500; }
+.sidebar nav button.active svg { opacity: 1; }
+.sidebar nav button:focus-visible { outline: 2px solid var(--g-blue); outline-offset: 2px; }
+.sidebar.collapsed nav button { justify-content: center; padding: 10px 0; }
+.sidebar.collapsed .nav-label { display: none; }
+
+.side-foot { margin-top: auto; padding: 12px 16px 2px; font-size: 12px; color: var(--muted); }
+.side-foot .sf-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
+.side-foot .sf-row b { color: var(--text-2); font-weight: 500; }
+.sf-sep { height: 1px; background: var(--outline-soft); margin: 9px 0; }
+.logout-btn {
+  all: unset; box-sizing: border-box; cursor: pointer; width: 100%;
+  display: flex; align-items: center; gap: 13px; padding: 9px 14px;
+  border-radius: var(--r-pill); color: var(--muted); font-size: 13px;
+  font-family: var(--sans); transition: background .15s, color .15s;
+}
+.logout-btn svg { width: 18px; height: 18px; flex: none; fill: currentColor; }
+.logout-btn:hover { background: var(--fail-bg); color: var(--fail); }
+.logout-btn:focus-visible { outline: 2px solid var(--g-blue); outline-offset: 2px; }
+/* 折叠时状态行藏起来，但退出按钮必须留着——否则收起侧栏就没法登出了 */
+.sidebar.collapsed .side-foot { padding: 12px 8px 2px; }
+.sidebar.collapsed #sideStat, .sidebar.collapsed .sf-sep { display: none; }
+.sidebar.collapsed .logout-btn { justify-content: center; padding: 9px 0; }
+
+/* ── 内容区 ─────────────────────────────────────────────────────────── */
+.content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  height: var(--topbar-h); flex: none; display: flex; align-items: center;
+  justify-content: space-between; gap: 16px; padding: 0 24px;
+  position: sticky; top: 0; z-index: 10; background: var(--bg);
+}
+.page-title { font-size: 23px; font-weight: 600; letter-spacing: -.02em; color: var(--text); }
+.topbar-right { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.service-status { display: inline-flex; align-items: center; gap: 9px; padding: 7px 12px;
+                  border-radius: var(--r-pill); background: var(--card); color: var(--text-2); }
+.dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--ok); }
+.dot.bad { background: var(--fail); }
+.dot.pending { background: var(--warn); }
+.skip-link { position: fixed; top: 10px; left: 10px; z-index: 100;
+             padding: 10px 16px; background: var(--nav-on-fg); color: white;
+             border-radius: 10px; transform: translateY(-160%); }
+.skip-link:focus { transform: translateY(0); }
+
+main { flex: 1; padding: 4px 24px 36px; min-width: 0; }
+h2 {
+  font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; min-height: 36px; flex-wrap: wrap;
+}
+
+/* ── 定高列表：撑满视口，不被数据撑开 ───────────────────────────────── */
+.page-fill { display: flex; flex-direction: column;
+             height: calc(100vh - var(--topbar-h) - 44px); margin-bottom: 0; }
+.table-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior-inline: contain; }
+.table-scroll > table { min-width: 1020px; }
+#reqTable { min-width: 1200px; }
+.table-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--card); }
+.pager { display: flex; align-items: center; justify-content: space-between;
+         gap: 12px; padding-top: 14px; margin-top: 4px; flex-wrap: wrap;
+         font-size: 13px; border-top: 1px solid var(--outline-soft); }
+.pager-btns { display: flex; align-items: center; gap: 6px; }

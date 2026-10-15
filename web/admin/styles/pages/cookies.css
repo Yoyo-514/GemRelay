@@ -1,0 +1,50 @@
+/* ── 分段切换（导入 Cookie 的两种填法）────────────────────────────────
+   两种填法各有各的场景：逐项适合照着 DevTools 一条条抄，整串适合已经有
+   "k=v; k=v" 现成串的。做成 tab 而不是两个入口，是因为切换时数据要互相
+   带过去——否则填一半换个模式就白填了。 */
+.segbar { display: inline-flex; background: var(--bg); border-radius: 999px;
+          padding: 3px; gap: 2px; margin-bottom: 14px; }
+.segbar button { border: none; background: transparent; cursor: pointer;
+                 font: inherit; font-size: 12.5px; color: var(--muted);
+                 padding: 6px 14px; border-radius: 999px; transition: all .15s; }
+.segbar button.on { background: var(--card); color: var(--fg);
+                    box-shadow: 0 1px 3px rgba(60,64,67,.16); }
+.ck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+           gap: 10px 12px; }
+.ck-grid .field { margin-bottom: 0; }
+.ck-grid .field.wide { grid-column: 1 / -1; }
+.ck-grid label { display: block; font-size: 11.5px; color: var(--muted);
+                 margin-bottom: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ck-grid label .req { color: var(--fail); }
+.ck-grid input { width: 100%; font-family: var(--mono); font-size: 12px;
+                 text-overflow: ellipsis; }
+.ck-extra { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+/* 逐项模式列了 7 个框，窄屏下别把弹窗撑爆 */
+ .modal.wide { width: min(620px, 100%); }
+
+/* 额度归属于账号：桌面保留表格，窄屏将同一行完整展开，避免横向寻找额度。 */
+.table-scroll > table.accounts-table { min-width: 1540px; }
+.quota-cell { display: grid; gap: 6px; font-size: 12px; overflow-wrap: anywhere; }
+.quota-cell .quota-line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.quota-cell .quota-remaining { font-variant-numeric: tabular-nums; font-weight: 600; }
+.quota-cell .quota-remaining.warn { color: var(--warn); }
+.quota-cell .quota-remaining.fail, .quota-cell .quota-error { color: var(--fail); }
+.quota-cell .quota-meta { color: var(--muted); font-size: 11px; }
+.quota-cell .btn { justify-self: start; }
+
+@media (max-width: 600px) {
+  .table-scroll > table.accounts-table { display: block; min-width: 0; table-layout: auto; }
+  .accounts-table colgroup, .accounts-table thead { display: none; }
+  .accounts-table tbody { display: grid; gap: 16px; }
+  .accounts-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--outline-soft); }
+  .accounts-table td { display: block; border: 0; padding: 0; min-width: 0; white-space: normal; text-align: left; overflow-wrap: anywhere; }
+  .accounts-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 4px; color: var(--muted); font: 12px var(--sans); }
+  .accounts-table .account-quota, .accounts-table .account-actions, .accounts-table .empty { grid-column: 1 / -1; }
+  .accounts-table td[data-label="标签"] { order: -4; grid-column: 1 / -1; font-size: 16px; font-weight: 600; }
+  .accounts-table td[data-label="标签"]::before { display: none; }
+  .accounts-table td[data-label="ID"], .accounts-table td[data-label="状态"] { order: -3; }
+  .accounts-table .account-quota { order: -2; }
+  .accounts-table .account-actions .actions { display: flex; flex-wrap: wrap; }
+  .accounts-table .quota-cell { font-size: 14px; }
+  .accounts-table .quota-meta { font-size: 12px; }
+}
