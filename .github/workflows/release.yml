@@ -78,18 +78,10 @@ jobs:
         run: |
           ver="${GITHUB_REF_NAME#v}"
           {
-            echo "单二进制，下载对应平台的那个直接跑，不需要 Go 也不需要 Docker："
-            echo
-            echo '```bash'
-            echo 'chmod +x gemrelay_*'
-            echo './gemrelay_* --port 8083 --admin-token your-admin-token'
-            echo '```'
-            echo
-            echo "容器部署见 \`ghcr.io/${{ github.repository }}\`。校验完整性用 \`SHA256SUMS.txt\`。"
             section=$(awk -v v="$ver" '$0=="## "v{f=1;next} /^## /{f=0} f' CHANGELOG.md)
             if [ -n "$section" ]; then
               echo
-              echo "## 本版更新"
+              echo "## 更新日志"
               echo "$section"
             fi
           } > release_body.md
