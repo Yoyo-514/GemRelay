@@ -9,7 +9,7 @@
 [![Stars](https://img.shields.io/github/stars/zexadev/gemini-web2api-go?style=flat&label=stars)](https://github.com/zexadev/gemini-web2api-go/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.21%2B-00ADD8.svg)](https://golang.org)
-[![Docker](https://img.shields.io/badge/docker-distroless-blue)](Dockerfile)
+[![Docker](https://img.shields.io/badge/docker-distroless-blue)](build/package/Dockerfile)
 
 [中文文档](README.md) | English
 
@@ -102,7 +102,7 @@ docker run -d --name gemini-web2api \
 For compose, just grab the file — no clone required:
 
 ```bash
-curl -O https://raw.githubusercontent.com/zexadev/gemini-web2api-go/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/zexadev/gemini-web2api-go/main/deployments/docker-compose.yml
 ADMIN_TOKEN=your-admin-token docker compose up -d
 ```
 
@@ -113,12 +113,13 @@ If you have Go, skip Docker entirely:
 ```bash
 git clone https://github.com/zexadev/gemini-web2api-go
 cd gemini-web2api-go
-go build -o gemini-web2api-go .
+go build -o gemini-web2api-go ./cmd/gemini-web2api
 ./gemini-web2api-go --port 8083 --admin-token your-admin-token
 ```
 
-Changed the code and want it in a container? Uncomment the two `build:` lines in
-`docker-compose.yml`, then `docker compose up -d --build`.
+For a source build, uncomment the `build` block in the repository's [deployment configuration](deployments/docker-compose.yml), then run `docker compose -f deployments/docker-compose.yml up -d --build` from the repository root. A standalone Compose download can pull the image, but building needs the full repository.
+
+Alternatively, build directly from the repository root: `docker build -f build/package/Dockerfile -t gemini-web2api-go .`.
 
 The startup banner:
 
@@ -350,7 +351,7 @@ Every value is range-checked on the server (for example `retry_attempts` accepts
 
 Both live in the database. Saved values are never echoed back (the cookie only reports how many cookies were recognised and whether the key ones are present).
 
-### Deploy-time config → `docker-compose.yml`
+### Deploy-time config → [deployment configuration](deployments/docker-compose.yml)
 
 What's left is only what requires restarting the process:
 
@@ -366,7 +367,7 @@ The `API_KEY` environment variable pins the API key (the panel can't change it),
 
 Command-line flags still work and are meant as temporary overrides during local debugging. Precedence: **panel changes > CLI flags / `config.json` > built-in defaults**.
 
-When running the binary directly, copy `config.example.json` to `config.json` as a starting template. Without `--config` the program looks for `./config.json` first, then `$HOME/.config/gemini-web2api/config.json`. Tunables in that file only seed the first boot; once changed in the panel, the panel wins.
+When running the binary directly, copy [`configs/config.example.json`](configs/config.example.json) to `config.json` as a starting template. Without `--config` the program looks for `./config.json` first, then `$HOME/.config/gemini-web2api/config.json`. Tunables in that file only seed the first boot; once changed in the panel, the panel wins.
 
 All flags:
 
@@ -500,39 +501,40 @@ This does not change the blocking threshold, though: in a same-start comparison,
 
 ## Project layout
 
+Source builds require Go 1.27.2 or newer. Container builds use the same version; the release workflow reads the requirement from the module manifest.
+
+The top-level layout follows the relevant parts of [golang-standards/project-layout](https://github.com/golang-standards/project-layout). All tests live under [tests/](tests/).
+
+| Path | Responsibility |
+|---|---|
+| [cmd/gemini-web2api/](cmd/gemini-web2api/) | Executable entry point |
+| [internal/app/](internal/app/) | Startup wiring and background scheduling |
+| [internal/config/](internal/config/) | Startup settings, runtime snapshots and version |
+| [internal/httpapi/](internal/httpapi/) | Routing, authentication, OpenAI/MCP adapters, admin and SSE |
+| [internal/gateway/](internal/gateway/) | Generation orchestration, conversations, video jobs and tools |
+| [internal/gemini/](internal/gemini/) | Upstream protocol, parsing, uploads, media and cookie rotation |
+| [internal/pool/](internal/pool/) | Account/proxy selection, binding, capacity and health |
+| [internal/cookies/](internal/cookies/) | Cookie normalization, extraction, identity and merge rules |
+| [internal/storage/](internal/storage/) | Database lifecycle, dialects, transactions, statistics and persistence |
+| [internal/transport/](internal/transport/) | Browser profiles, headers and HTTP clients |
+| [tests/](tests/) | Grouped external tests, probes, isolated setup and fixtures |
+| [web/admin/](web/admin/) | Admin assets and embedding declaration; bundled into the binary |
+| [configs/](configs/) | Configuration templates; runtime lookup paths remain unchanged |
+| [build/package/](build/package/) | Container image definition |
+| [deployments/](deployments/) | Compose configuration |
+| [.github/workflows/](.github/workflows/) | Container and binary release workflows |
+
+Run verification from the repository root:
+
+```bash
+go build ./...
+go test ./... -count=1
+go vet ./...
 ```
-main.go                    just calls app.Run(); the entry stays at the root so `go build .` works
-internal/app/              everything else
-  app.go                   flag parsing + route registration + startup
-  config.go                config loading + defaults
-  client.go                tls-client (chrome146) + stdlib (when proxied)
-  gemini.go                model table + 80-slot payload + model header + StreamGenerate + wrb.fr parsing
-  xsrf.go                  XSRF token required with a cookie: fetch + per-cookie cache + self-heal
-  messages.go              OpenAI messages → prompt, tool_call parsing
-  server.go                /v1/* + rate-limit entry + request validation + metrics
-  sse.go                   SSE writer (lazy header, so early failures still return 502 JSON)
-  ratelimit.go             per-IP-slot concurrency / RPM / RPH
-  tokenizer.go             tiktoken cl100k_base singleton
-  apikey.go                API key (locked by flag / rotatable from the panel)
-  db.go                    SQLite schema: sessions / requests / accounts / kv
-  proxy.go                 proxy pool CRUD + capacity scheduling + circuit breaker
-  cookie_pool.go           cookie pool data layer (CRUD + least-recently-used pick + health writeback + refresh merge)
-  rotate.go                session keepalive (RotateCookies: 1PSIDTS sentinel + SIDCC iframe, server-dictated interval)
-  upload.go                attachment upload (content-push, two-step resumable)
-  context_file.go          over-long conversations as a text attachment
-  vision.go                image input: data: URL / http(s) link -> pending attachment
-  bl.go                    upstream frontend version (bl) auto-follow
-  scheduler.go             hourly/daily aggregation + retention cleanup
-  runtime.go               runtime config snapshot (panel edits apply instantly)
-  admin.go                 /admin/api/* auth + REST
-  admin_cookies.go         cookie pool admin REST (redacted before returning)
-  admin_ui.go              embeds admin_ui/
-  admin_ui/                admin panel frontend (single page + Chart.js, embedded, no CDN)
-  gemini_test.go           protocol-layer tests: payload slots, wrb.fr parsing, model gating, rate limits
-Dockerfile                 multi-stage (alpine builder → distroless runtime)
-docker-compose.yml         single container, pulls the ghcr image by default, sqlite on a volume
-.github/workflows/         docker.yml pushes images / release.yml publishes binaries on tag
-```
+
+Each test package uses a temporary SQLite database and ignores production DSNs. The live upload probe requires explicit opt-in through its environment variable. See the [architecture notes](docs/architecture.md) for package responsibilities and migration details.
+
+When upgrading an existing Compose deployment, retain its original project name with `-p` so the moved deployment file does not select a new volume prefix. Do not delete the original volume.
 
 ## Limitations
 

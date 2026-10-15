@@ -1,6 +1,6 @@
 module gemini-web2api
 
-go 1.26.8
+go 1.27.2
 
 require (
 	github.com/bogdanfinn/fhttp v0.6.8

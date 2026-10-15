@@ -9,7 +9,7 @@
 [![Stars](https://img.shields.io/github/stars/zexadev/gemini-web2api-go?style=flat&label=stars)](https://github.com/zexadev/gemini-web2api-go/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.21%2B-00ADD8.svg)](https://golang.org)
-[![Docker](https://img.shields.io/badge/docker-distroless-blue)](Dockerfile)
+[![Docker](https://img.shields.io/badge/docker-distroless-blue)](build/package/Dockerfile)
 
 中文 | [English](README_EN.md)
 
@@ -95,7 +95,7 @@ docker run -d --name gemini-web2api \
 用 compose 的话把 `docker-compose.yml` 单独下下来就行，也不用 clone：
 
 ```bash
-curl -O https://raw.githubusercontent.com/zexadev/gemini-web2api-go/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/zexadev/gemini-web2api-go/main/deployments/docker-compose.yml
 ADMIN_TOKEN=your-admin-token docker compose up -d
 ```
 
@@ -106,11 +106,13 @@ ADMIN_TOKEN=your-admin-token docker compose up -d
 ```bash
 git clone https://github.com/zexadev/gemini-web2api-go
 cd gemini-web2api-go
-go build -o gemini-web2api-go .
+go build -o gemini-web2api-go ./cmd/gemini-web2api
 ./gemini-web2api-go --port 8083 --admin-token your-admin-token
 ```
 
-改了代码想用容器跑，把 `docker-compose.yml` 里 `build:` 那两行的注释去掉，再 `docker compose up -d --build`。
+改了代码想用容器跑，在仓库中的 [部署配置](deployments/docker-compose.yml) 里取消 `build` 配置块的注释，然后从仓库根目录执行 `docker compose -f deployments/docker-compose.yml up -d --build`。独立下载的 Compose 文件只用于拉取镜像；源码构建需要完整仓库。
+
+也可从仓库根目录直接构建镜像：`docker build -f build/package/Dockerfile -t gemini-web2api-go .`。
 
 启动后会看到 banner：
 
@@ -377,7 +379,7 @@ curl http://127.0.0.1:8083/v1/chat/completions \
 
 两者都存在数据库里。已保存的值不回显（cookie 只显示识别到几个、关键项齐不齐）。
 
-### 部署期配置 → `docker-compose.yml`
+### 部署期配置 → [部署配置](deployments/docker-compose.yml)
 
 只剩改了必须重启进程的：
 
@@ -395,7 +397,7 @@ Cookie 池（按 URL、cookie 内容去重），之后一律从面板管理。�
 命令行参数仍然可用，定位是本地调试时的临时覆盖。优先级：
 **面板改动 > CLI flag / `config.json` > 内置默认**。
 
-不用 Docker 直接跑二进制时，可以把 `config.example.json` 复制成 `config.json` 当启动模板
+不用 Docker 直接跑二进制时，可以把 [`configs/config.example.json`](configs/config.example.json) 复制成 `config.json` 当启动模板
 （不传 `--config` 时会自动找当前目录的 `config.json`，其次
 `$HOME/.config/gemini-web2api/config.json`）。里面的调优项面板改了就以面板为准，
 `config.json` 只决定第一次启动的初值。
@@ -570,39 +572,40 @@ Chrome 指纹得有别的理由（比如担心长期账号画像），不能指�
 
 ## 项目结构
 
+源码构建要求 Go 1.27.2 或更新版本；容器构建使用相同版本，发布流水线读取模块清单中的版本要求。
+
+布局参考 [golang-standards/project-layout](https://github.com/golang-standards/project-layout/blob/master/README_zh-CN.md)，按实际需要采用目录；全部测试集中在 [tests/](tests/)。
+
+| 路径 | 职责 |
+|---|---|
+| [cmd/gemini-web2api/](cmd/gemini-web2api/) | 程序入口 |
+| [internal/app/](internal/app/) | 启动装配与后台任务调度 |
+| [internal/config/](internal/config/) | 启动配置、运行时快照和版本 |
+| [internal/httpapi/](internal/httpapi/) | 路由、鉴权、OpenAI/MCP 协议适配、管理端和 SSE |
+| [internal/gateway/](internal/gateway/) | 生成编排、多轮、视频任务、消息与工具转换 |
+| [internal/gemini/](internal/gemini/) | Gemini 网页协议、上传、响应解析、媒体与刷新协议 |
+| [internal/pool/](internal/pool/) | 账号与代理池、出口绑定、容量和健康状态 |
+| [internal/cookies/](internal/cookies/) | Cookie 归一化、提取、身份判定与刷新合并 |
+| [internal/storage/](internal/storage/) | 数据库连接、方言、事务、统计和持久化 |
+| [internal/transport/](internal/transport/) | TLS 指纹、浏览器请求头和网络客户端 |
+| [tests/](tests/) | 按职责分组的外部测试、探针、隔离辅助与数据 |
+| [web/admin/](web/admin/) | 管理页面、Chart.js 和资源嵌入声明，随二进制发布 |
+| [configs/](configs/) | 配置模板，不改变运行时默认配置查找路径 |
+| [build/package/](build/package/) | 容器镜像构建定义 |
+| [deployments/](deployments/) | Compose 部署配置 |
+| [.github/workflows/](.github/workflows/) | 镜像与二进制发布流水线 |
+
+在仓库根目录执行验证：
+
+```bash
+go build ./...
+go test ./... -count=1
+go vet ./...
 ```
-main.go                    只有一句 app.Run()；入口留在根目录，`go build .` 直接可用
-internal/app/              全部实现
-  app.go                   flag 解析 + 路由注册 + 启动
-  config.go                配置加载 + 默认值
-  client.go                tls-client (chrome146) + stdlib (走代理) 双 client
-  gemini.go                模型表 + 80 槽 payload + 模型 header + StreamGenerate + wrb.fr 解析
-  xsrf.go                  带 cookie 时必需的 XSRF token：抓取 + 按 cookie 缓存 + 过期自愈
-  messages.go              OpenAI messages → prompt，tool_call 解析
-  server.go                /v1/* + 限流入口 + 参数校验 + metrics 写入
-  sse.go                   SSE 写出器（懒发 header，失败仍能返回 502 JSON）
-  ratelimit.go             每 IP slot 独立并发 / RPM / RPH 限流
-  tokenizer.go             tiktoken cl100k_base 单例
-  apikey.go                API key（启动参数锁定 / 面板可轮换 双轨）
-  db.go                    SQLite schema：sessions / requests / accounts / kv
-  proxy.go                 代理池 CRUD + 容量调度 + 熔断
-  cookie_pool.go           Cookie 池数据层（CRUD + 最久未用优先挑选 + 健康度回写 + 刷新项合并）
-  rotate.go                会话保活（RotateCookies：1PSIDTS 哨兵 + SIDCC iframe，间隔由服务端指定）
-  upload.go                附件上传（content-push 两步 resumable）
-  context_file.go          超长对话转文本附件
-  vision.go                图片输入：data: URL / http(s) 链接 → 待上传附件
-  bl.go                    上游前端版本号 bl 自动跟随
-  scheduler.go             小时/天聚合 + 过期明细清理
-  runtime.go               运行时配置快照（面板改完即时生效）
-  admin.go                 /admin/api/* 鉴权 + REST
-  admin_cookies.go         Cookie 池的 admin REST（返回前脱敏）
-  admin_ui.go              embed admin_ui/
-  admin_ui/                管理面板前端（单页 + Chart.js，随二进制打包，不走 CDN）
-  gemini_test.go           协议层单测：payload 槽位、wrb.fr 解析、模型门控、限流
-Dockerfile                 多阶段构建（alpine builder → distroless runtime）
-docker-compose.yml         单容器，默认拉 ghcr 镜像，sqlite 挂 volume
-.github/workflows/         docker.yml 推镜像 / release.yml 打 tag 发二进制
-```
+
+测试按包独立使用临时 SQLite，不继承生产数据库连接串；真实上游上传探针仅在显式设置探针环境变量后运行。包职责、依赖约束和迁移说明见 [架构说明](docs/architecture.md)。
+
+已有 Compose 部署升级时，应沿用原项目名（通过 `-p` 指定），避免因部署文件迁入子目录而创建新的数据卷前缀；不要删除原数据卷。
 
 ## 限制
 

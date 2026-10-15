@@ -8,15 +8,13 @@ import (
 	"sort"
 	"strings"
 	"time"
-)
 
-func logf(format string, args ...interface{}) {
-	if rtCfg().LogRequests {
-		fmt.Fprintf(os.Stderr, "[%s] %s\n",
-			time.Now().Format("15:04:05"),
-			fmt.Sprintf(format, args...))
-	}
-}
+	"gemini-web2api/internal/config"
+	"gemini-web2api/internal/gateway"
+	"gemini-web2api/internal/httpapi"
+	"gemini-web2api/internal/pool"
+	"gemini-web2api/internal/storage"
+)
 
 // maskKey shows "sk-gemini-XXXX...YYYY" for banner. Empty stays empty.
 func maskKey(k string) string {
@@ -29,7 +27,7 @@ func maskKey(k string) string {
 	return k[:12] + "..." + k[len(k)-4:]
 }
 
-// Run 是进程入口，由根目录的 main.go 调用。
+// Run 是进程入口，由 cmd/gemini-web2api/main.go 调用。
 func Run() {
 	port := flag.Int("port", 0, "listening port (default: 8083 or config.json)")
 	configPath := flag.String("config", "", "path to config.json")
@@ -43,157 +41,95 @@ func Run() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("gemini-web2api-go %s\n", Version)
+		fmt.Printf("gemini-web2api-go %s\n", config.Version)
 		return
 	}
 
-	if err := loadConfig(*configPath); err != nil {
+	if err := config.Load(*configPath); err != nil {
 		fmt.Fprintf(os.Stderr, "config load error: %v\n", err)
 		os.Exit(1)
 	}
 	if *port > 0 {
-		cfg.Port = *port
+		config.Startup().Port = *port
 	}
 	if *cookieFile != "" {
-		cfg.CookieFile = *cookieFile
+		config.Startup().CookieFile = *cookieFile
 	}
 	if *proxy != "" {
-		cfg.Proxy = *proxy
+		config.Startup().Proxy = *proxy
 	}
 	if *impersonate != "" {
-		cfg.Impersonate = *impersonate
+		config.Startup().Impersonate = *impersonate
 	}
 	if *dbPath != "" {
-		cfg.DBPath = *dbPath
+		config.Startup().DBPath = *dbPath
 	}
 	if *adminToken != "" {
-		cfg.AdminToken = *adminToken
+		config.Startup().AdminToken = *adminToken
 	}
-	if envTok := os.Getenv("ADMIN_TOKEN"); envTok != "" && cfg.AdminToken == "" {
-		cfg.AdminToken = envTok
+	if envTok := os.Getenv("ADMIN_TOKEN"); envTok != "" && config.Startup().AdminToken == "" {
+		config.Startup().AdminToken = envTok
 	}
 
 	// boot DB and load proxy pool
-	getDB()
-	initRuntimeConfig() // 面板改过的运行时配置盖在启动配置之上
-	loadProxies()
-	seedProxiesFromConfig() // --proxy / 遗留静态代理并进代理池
-	seedCookiesFromConfig() // --cookie-file / 遗留单 cookie 并进 cookie 池
-	resolvedAPIKey := initAPIKey(*apiKey)
-	initTokenizer()
+	storage.DB()
+	gateway.InitRuntimeConfig() // 面板改过的运行时配置盖在启动配置之上
+	pool.LoadProxies()
+	pool.SeedProxiesFromConfig() // --proxy / 遗留静态代理并进代理池
+	pool.SeedCookiesFromConfig() // --cookie-file / 遗留单 cookie 并进 cookie 池
+	resolvedAPIKey := httpapi.InitAPIKey(*apiKey)
+	gateway.InitTokenizer()
 	startScheduler()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/models", requireAPIKey(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "OPTIONS":
-			handleOptions(w, r)
-		case "GET":
-			handleModels(w, r)
-		default:
-			writeJSON(w, 405, map[string]string{"error": "method not allowed"})
-		}
-	}))
-	mux.HandleFunc("/v1/chat/completions", requireAPIKey(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "OPTIONS":
-			handleOptions(w, r)
-		case "POST":
-			handleChatCompletions(w, r)
-		default:
-			writeJSON(w, 405, map[string]string{"error": "method not allowed"})
-		}
-	}))
-	mux.HandleFunc("/v1/responses", requireAPIKey(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "OPTIONS":
-			handleOptions(w, r)
-		case "POST":
-			handleResponses(w, r)
-		default:
-			writeJSON(w, 405, map[string]string{"error": "method not allowed"})
-		}
-	}))
-	// /v1/videos —— OpenAI(Sora) 形状的异步视频生成。POST 建任务，GET 轮询，GET .../content 下 MP4。
-	mux.HandleFunc("/v1/videos", requireAPIKey(handleCreateVideo))
-	mux.HandleFunc("/v1/videos/", requireAPIKey(handleVideoItem))
-	// MCP over HTTP（Streamable HTTP）：跟 OpenAI 接口同进程同端口，暴露 web_search。
-	// 用同一把 API key 鉴权，客户端配 Authorization: Bearer <key> 连这个 URL。
-	mux.HandleFunc("/mcp", requireAPIKey(handleMCPHTTP))
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			handleRoot(w, r)
-		} else {
-			writeJSON(w, 404, map[string]string{"error": "not found"})
-		}
-	})
+	handler := httpapi.NewHandler()
 
-	// ─── Admin UI + API ────────────────────────────────────────────────
-	if cfg.AdminEnabled {
-		mux.HandleFunc("/admin", handleAdminUI)
-		mux.HandleFunc("/admin/", handleAdminUI)
-		mux.HandleFunc("/admin/api/login", handleAdminLogin)
-		mux.HandleFunc("/admin/api/logout", handleAdminLogout)
-		mux.HandleFunc("/admin/api/stats", requireAuth(handleAdminStats))
-		mux.HandleFunc("/admin/api/timeseries", requireAuth(handleAdminTimeseries))
-		mux.HandleFunc("/admin/api/requests", requireAuth(handleAdminRequests))
-		mux.HandleFunc("/admin/api/proxies", requireAuth(handleAdminProxies))
-		mux.HandleFunc("/admin/api/proxies/", requireAuth(handleAdminProxyItem))
-		mux.HandleFunc("/admin/api/apikey", requireAuth(handleAdminAPIKey))
-		mux.HandleFunc("/admin/api/usage", requireAuth(handleAdminUsage))
-		mux.HandleFunc("/admin/api/config", requireAuth(handleAdminConfig))
-		mux.HandleFunc("/admin/api/cookies", requireAuth(handleAdminCookies))
-		mux.HandleFunc("/admin/api/cookies/", requireAuth(handleAdminCookieItem))
-		mux.HandleFunc("/admin/api/test", requireAuth(handleAdminTest))
-	}
-
-	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	addr := fmt.Sprintf("%s:%d", config.Startup().Host, config.Startup().Port)
 	server := &http.Server{
 		Addr:         addr,
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 0, // streaming responses can be long
 	}
 
 	cookieStatus := "none (anonymous)"
-	if total, enabled := accountCount(); enabled > 0 {
+	if total, enabled := pool.AccountCount(); enabled > 0 {
 		cookieStatus = fmt.Sprintf("%d/%d in pool", enabled, total)
 	}
 	proxyStatus := "none (direct)"
-	if n := len(listProxies()); n > 0 {
+	if n := len(pool.ListProxies()); n > 0 {
 		proxyStatus = fmt.Sprintf("%d in pool", n)
 	}
 	var modelNames []string
-	for n := range availableModels() {
+	for n := range gateway.AvailableModels() {
 		modelNames = append(modelNames, n)
 	}
 	sort.Strings(modelNames)
 
-	fmt.Printf("gemini-web2api-go v%s\n", Version)
+	fmt.Printf("gemini-web2api-go v%s\n", config.Version)
 	fmt.Printf("  Listening:   http://%s\n", addr)
-	fmt.Printf("  Base URL:    http://localhost:%d/v1\n", cfg.Port)
+	fmt.Printf("  Base URL:    http://localhost:%d/v1\n", config.Startup().Port)
 	fmt.Printf("  API key:     %s%s\n", maskKey(resolvedAPIKey),
-		map[bool]string{true: "  (locked by flag/env)", false: "  (mutable in admin UI)"}[apiKeyLocked])
-	if cfg.AdminEnabled {
+		map[bool]string{true: "  (locked by flag/env)", false: "  (mutable in admin UI)"}[httpapi.APIKeyLocked()])
+	if config.Startup().AdminEnabled {
 		authMode := "no auth (open)"
-		if cfg.AdminToken != "" {
+		if config.Startup().AdminToken != "" {
 			authMode = "token auth"
 		}
-		fmt.Printf("  Admin UI:    http://localhost:%d/admin  (%s)\n", cfg.Port, authMode)
+		fmt.Printf("  Admin UI:    http://localhost:%d/admin  (%s)\n", config.Startup().Port, authMode)
 	}
-	fmt.Printf("  DB:          %s\n", cfg.DBPath)
+	fmt.Printf("  DB:          %s\n", config.Startup().DBPath)
 	fmt.Printf("  Models:      %v\n", modelNames)
 	fmt.Printf("  Cookie:      %s\n", cookieStatus)
 	fmt.Printf("  Proxy:       %s\n", proxyStatus)
-	fmt.Printf("  Impersonate: %s\n", rtCfg().Impersonate)
+	fmt.Printf("  Impersonate: %s\n", config.Runtime().Impersonate)
 	tokInfo := "chars/4 (fallback)"
-	if tokenizerOK {
+	if gateway.TokenizerReady() {
 		tokInfo = "tiktoken cl100k_base"
 	}
 	fmt.Printf("  Tokenizer:   %s\n", tokInfo)
 	fmt.Printf("  Per-IP 限流: 并发=%d / RPM=%d / RPH=%d\n",
-		rtCfg().PerIPConcurrent, rtCfg().PerIPRPM, rtCfg().PerIPRPH)
-	fmt.Printf("  Retry:       %dx / %ds\n", rtCfg().RetryAttempts, rtCfg().RetryDelaySec)
+		config.Runtime().PerIPConcurrent, config.Runtime().PerIPRPM, config.Runtime().PerIPRPH)
+	fmt.Printf("  Retry:       %dx / %ds\n", config.Runtime().RetryAttempts, config.Runtime().RetryDelaySec)
 	fmt.Println()
 	warnEnvProxyIgnored()
 
@@ -219,7 +155,7 @@ func warnEnvProxyIgnored() {
 			set = append(set, k)
 		}
 	}
-	if len(set) == 0 || len(listProxies()) > 0 {
+	if len(set) == 0 || len(pool.ListProxies()) > 0 {
 		return
 	}
 	fmt.Printf("  ⚠ 检测到代理环境变量 %s，但本程序**不读**它们，当前走直连。\n"+
