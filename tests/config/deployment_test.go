@@ -41,7 +41,7 @@ func TestContainerBuildContract(t *testing.T) {
 	if err := json.Unmarshal([]byte(match[1]), &command); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(command, " ") != "--db /data/gemini.db --port 8083" {
+	if strings.Join(command, " ") != "--db /data/gemrelay.db --port 8083" {
 		t.Fatalf("持久化路径或监听端口发生意外变化: %v", command)
 	}
 	ignore := read(".dockerignore")
@@ -59,8 +59,8 @@ func TestComposeBuildsCurrentCheckout(t *testing.T) {
 	}
 	text := string(body)
 	for _, want := range []string{
-		"image: gemini-web2api-go:local", "pull_policy: build", "context: ..",
-		"dockerfile: build/package/Dockerfile", "${ADMIN_TOKEN:?", "127.0.0.1:8083:8083", "gw2a-data:/data",
+		"image: gemrelay:local", "pull_policy: build", "context: ..",
+		"dockerfile: build/package/Dockerfile", "${ADMIN_TOKEN:?", "127.0.0.1:8083:8083", "gemrelay-data:/data",
 	} {
 		if !strings.Contains(text, want) {
 			t.Errorf("部署契约缺少 %q", want)

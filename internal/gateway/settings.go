@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/config"
+	"gemrelay/internal/storage"
 )
 
 // InitRuntimeConfig 用启动配置做基线，再把面板改过的值盖上去。

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 // splitCookiePairs 把 "k=v; k=v" 拆成键值对。

@@ -5,10 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/tests/testutil"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/pool"
+	"gemrelay/tests/testutil"
 )
 
 func TestQuotaRouteValidation(t *testing.T) {

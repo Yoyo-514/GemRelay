@@ -73,7 +73,7 @@ func defaultConfig() Config {
 		CookieFile:     "",
 		Proxy:          "",
 		Impersonate:    "chrome_146",
-		DBPath:         "./data/gemini.db",
+		DBPath:         "./data/gemrelay.db",
 		AdminToken:     "",
 		AdminEnabled:   true,
 		RetentionDays:  30,
@@ -101,11 +101,8 @@ func defaultConfig() Config {
 func Load(path string) error {
 	cfg = defaultConfig()
 	if path == "" {
-		for _, p := range []string{"./config.json", os.ExpandEnv("$HOME/.config/gemini-web2api/config.json")} {
-			if _, err := os.Stat(p); err == nil {
-				path = p
-				break
-			}
+		if _, err := os.Stat("./config.json"); err == nil {
+			path = "./config.json"
 		}
 	}
 	if path == "" {

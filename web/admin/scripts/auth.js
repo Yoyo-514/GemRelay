@@ -17,7 +17,7 @@ function renderLogin() {
       <h1><span class="spark" style="width:20px;height:20px;background:var(--g-sweep);
         border-radius:4px;display:inline-block;
         clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)"></span>
-        gemini-web2api</h1>
+        GemRelay</h1>
       <p class="lede" id="loginHint">登录后管理请求记录、代理出口和账号状态。</p>
       <label for="tokenInput">管理员令牌</label>
       <input id="tokenInput" type="password" placeholder="输入管理员令牌" autocomplete="off" aria-describedby="loginHint loginErr" required />

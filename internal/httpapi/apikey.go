@@ -10,7 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/storage"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 	apiKeyMu      sync.Mutex
 )
 
-const apiKeyPrefix = "sk-gemini-"
+const apiKeyPrefix = "sk-gemrelay-"
 
 func newAPIKey() string {
 	b := make([]byte, 24)

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/storage"
 )
 
 // BuildUsage 用 tiktoken 算 token 数，跟 requests 表里记的口径保持一致。

@@ -9,7 +9,7 @@ import (
 
 	fhttp "github.com/bogdanfinn/fhttp"
 
-	"gemini-web2api/internal/transport"
+	"gemrelay/internal/transport"
 )
 
 // 单张图的大小上限。上游没给明确数字，取一个既能覆盖正常截图、又不至于让一次

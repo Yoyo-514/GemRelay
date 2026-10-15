@@ -3,9 +3,9 @@ package tests
 import (
 	"testing"
 
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/tests/testutil"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/pool"
+	"gemrelay/tests/testutil"
 )
 
 // 面板的填空模板要能跟原始 cookie 串一样入池。

@@ -12,7 +12,7 @@ The top-level layout follows the relevant parts of [golang-standards/project-lay
 
 | Path | Responsibility |
 |---|---|
-| [cmd/gemini-web2api/](../../cmd/gemini-web2api/) | Executable entry point |
+| [cmd/gemrelay/](../../cmd/gemrelay/) | Executable entry point |
 | [internal/app/](../../internal/app/) | Startup wiring and background scheduling |
 | [internal/config/](../../internal/config/) | Startup settings, runtime snapshots and version |
 | [internal/httpapi/](../../internal/httpapi/) | Routing, authentication, OpenAI/MCP adapters, admin and SSE |
@@ -24,14 +24,14 @@ The top-level layout follows the relevant parts of [golang-standards/project-lay
 | [internal/transport/](../../internal/transport/) | Browser profiles, headers and HTTP clients |
 | [tests/](../../tests/) | Grouped external tests, probes, isolated setup and fixtures |
 | [web/admin/](../../web/admin/) | Admin assets and embedding declaration; bundled into the binary |
-| [configs/](../../configs/) | Configuration templates; runtime lookup paths remain unchanged |
+| [configs/](../../configs/) | Configuration templates; use an explicit path or a working-directory file |
 | [build/package/](../../build/package/) | Container image definition |
 | [deployments/](../../deployments/) | Compose configuration |
 | [.github/workflows/](../../.github/workflows/) | Container and binary release workflows |
 
 Run verification from the repository root:
 
-On Windows, use `go build -o gemini-web2api.exe ./cmd/gemini-web2api` when you need an executable file. The all-package build check below does not leave an executable in the repository root.
+On Windows, use `go build -o gemrelay.exe ./cmd/gemrelay` when you need an executable file. The all-package build check below does not leave an executable in the repository root.
 
 ```bash
 go build ./...
@@ -41,15 +41,20 @@ go vet ./...
 
 Each test package uses a temporary SQLite database and ignores production DSNs. The live upload probe requires explicit opt-in through its environment variable. See the [architecture notes](../architecture.md) for package responsibilities and migration details.
 
-When upgrading an existing Compose deployment, retain its original project name with `-p` so the moved deployment file does not select a new volume prefix. Do not delete the original volume.
+GemRelay uses its own database filename and data volume. Configuration comes from an explicit path or the working directory. Existing project data stays in its original location.
+
+## Continuous integration
+
+PRs run Go formatting, `go vet`, tests and a build. Image and binary publishing reuse these checks; version tags must also match the code version.
+Main-branch pushes still publish images, and version tags publish images and a Release. When manually triggered on a non-version-tag ref, the Release workflow retains build artifacts for 7 days without creating a formal Release.
 
 ## Container verification with WSLC on Windows
 
 If WSLC is installed, build and run the image without requiring a conventional WSL distribution:
 
 ```powershell
-wslc build --progress plain -f "build/package/Dockerfile" -t "gemini-web2api-go:local" "."
-wslc run --rm --publish "127.0.0.1:18083:8083" --env "ADMIN_TOKEN=local-verification-only" "gemini-web2api-go:local"
+wslc build --progress plain -f "build/package/Dockerfile" -t "gemrelay:local" "."
+wslc run --rm --publish "127.0.0.1:18083:8083" --env "ADMIN_TOKEN=local-verification-only" "gemrelay:local"
 ```
 
 This uses only the test container's writable database and mounts no existing volume. Once ready, check `http://127.0.0.1:18083/` and the admin page. Stopping the container removes its temporary data through `--rm`.

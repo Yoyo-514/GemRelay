@@ -21,7 +21,7 @@ chmod +x gemini-web2api-go_*
 ./gemini-web2api-go_* --port 8083 --admin-token your-admin-token
 ```
 
-Data lands in `./data/gemini.db` by default; pass `--db /your/path.db` to move it.
+Data lands in `./data/gemrelay.db` by default; pass `--db /your/path.db` to move it.
 
 To use MySQL / PostgreSQL, just set the `SQL_DSN` env var (unset = SQLite, nothing to change):
 
@@ -44,7 +44,7 @@ docker run -d --name gemini-web2api \
   ghcr.io/zexadev/gemini-web2api-go:latest
 ```
 
-With Docker Compose v2, run from the checkout's root. The configuration builds `gemini-web2api-go:local` and requires an admin token:
+With Docker Compose v2, run from the checkout's root. The configuration builds `gemrelay:local` and requires an admin token:
 
 ```bash
 ADMIN_TOKEN=your-admin-token docker compose -f deployments/docker-compose.yml up -d --build
@@ -55,17 +55,17 @@ ADMIN_TOKEN=your-admin-token docker compose -f deployments/docker-compose.yml up
 Use Go 1.27.2 or newer and run from the current checkout's root. Cloning upstream does not obtain this version's changes:
 
 ```bash
-go build -o gemini-web2api-go ./cmd/gemini-web2api
-./gemini-web2api-go --port 8083 --admin-token your-admin-token
+go build -o gemrelay ./cmd/gemrelay
+./gemrelay --port 8083 --admin-token your-admin-token
 ```
 
 The [deployment configuration](../../deployments/docker-compose.yml) already enables source builds and requires the full checkout; downloading that file alone is insufficient. The build context is the repository root and uses [build/package/Dockerfile](../../build/package/Dockerfile). The [.dockerignore](../../.dockerignore) allowlist includes production sources, module manifests and embedded assets only.
 
 In PowerShell, set the environment variable before running Compose. Alternatively, use `docker compose --env-file .env -f deployments/docker-compose.yml up -d --build`; do not commit tokens or database credentials.
 
-For an existing deployment, keep its original Compose project name with `-p`. Do not remove persistent volumes with `down -v`. The current healthcheck only checks that the binary runs; use `GET /` for HTTP readiness.
+GemRelay stores container data in its own `gemrelay-data` volume. Existing project data stays in its original location; back it up before changing deployments. The current healthcheck only checks that the binary runs; use `GET /` for HTTP readiness.
 
-Alternatively, build directly from the repository root: `docker build -f build/package/Dockerfile -t gemini-web2api-go .`.
+Alternatively, build directly from the repository root: `docker build -f build/package/Dockerfile -t gemrelay .`.
 
 Startup banner example from an older release (version and model list vary with the running build):
 
@@ -141,7 +141,7 @@ The `API_KEY` environment variable pins the API key (the panel can't change it),
 
 Command-line flags still work and are meant as temporary overrides during local debugging. Precedence: **panel changes > CLI flags / `config.json` > built-in defaults**.
 
-When running the binary directly, copy [`configs/config.example.json`](../../configs/config.example.json) to `config.json` as a starting template. Without `--config` the program looks for `./config.json` first, then `$HOME/.config/gemini-web2api/config.json`. Tunables in that file only seed the first boot; once changed in the panel, the panel wins.
+When running the binary directly, copy [`configs/config.example.json`](../../configs/config.example.json) to `config.json` as a starting template. The program reads the explicit `--config` path, or `./config.json` in its working directory when the flag is omitted. Missing local configuration falls back to built-in defaults. Tunables in that file only seed the first boot; once changed in the panel, the panel wins.
 
 All flags:
 
@@ -149,7 +149,7 @@ All flags:
 |---|---|
 | `--port` | listening port, default 8083 |
 | `--config` | path to `config.json` |
-| `--db` | SQLite path, default `./data/gemini.db` |
+| `--db` | SQLite path, default `./data/gemrelay.db` |
 | `--admin-token` | panel login token; empty = no auth (only acceptable when bound to 127.0.0.1) |
 | `--api-key` | pins the `/v1/*` key so the panel can't change it, same as the `API_KEY` env var |
 | `--cookie-file` | imports the cookie in this file into the cookie pool at startup |

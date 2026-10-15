@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gemini-web2api/internal/gateway"
+	"gemrelay/internal/gateway"
 )
 
 // feed 按给定的切法把整段文本喂进闸门，返回实际发给客户端的内容。

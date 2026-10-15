@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gemini"
 )
 
 // contextFileName 是历史附件在模型那边显示的文件名，指令里会引用它。

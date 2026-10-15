@@ -20,7 +20,7 @@ chmod +x gemini-web2api-go_*
 ./gemini-web2api-go_* --port 8083 --admin-token your-admin-token
 ```
 
-数据默认落在 `./data/gemini.db`，换位置加 `--db /your/path.db`。
+数据默认落在 `./data/gemrelay.db`，换位置加 `--db /your/path.db`。
 
 想用 MySQL / PostgreSQL，设 `SQL_DSN` 环境变量即可（不设就是 SQLite，无需改动）：
 
@@ -43,7 +43,7 @@ docker run -d --name gemini-web2api \
   ghcr.io/zexadev/gemini-web2api-go:latest
 ```
 
-使用 Docker Compose v2 时，从当前仓库根目录执行。配置会构建本地镜像 `gemini-web2api-go:local`，管理员令牌必须提供：
+使用 Docker Compose v2 时，从当前仓库根目录执行。配置会构建本地镜像 `gemrelay:local`，管理员令牌必须提供：
 
 ```bash
 ADMIN_TOKEN=your-admin-token docker compose -f deployments/docker-compose.yml up -d --build
@@ -54,17 +54,17 @@ ADMIN_TOKEN=your-admin-token docker compose -f deployments/docker-compose.yml up
 需要 Go 1.27.2 或更新版本。在本仓根目录执行，不要用原项目源码代替当前版本：
 
 ```bash
-go build -o gemini-web2api-go ./cmd/gemini-web2api
-./gemini-web2api-go --port 8083 --admin-token your-admin-token
+go build -o gemrelay ./cmd/gemrelay
+./gemrelay --port 8083 --admin-token your-admin-token
 ```
 
 本仓的 [部署配置](../deployments/docker-compose.yml) 已启用源码构建，需要完整仓库，不能只下载该文件运行。构建上下文为仓库根目录，镜像定义位于 [build/package/Dockerfile](../build/package/Dockerfile)。[构建忽略规则](../.dockerignore)仅允许生产源码、模块清单与嵌入资源进入上下文。
 
 PowerShell 可先设置环境变量，再运行同一条 Compose 命令。也可通过 `docker compose --env-file .env -f deployments/docker-compose.yml up -d --build` 读取本地环境文件；不要提交含令牌或数据库凭据的文件。
 
-现有部署升级请沿用原 Compose 项目名，例如在命令中添加 `-p 原项目名`，不要执行 `down -v` 删除数据卷。当前 healthcheck 只确认二进制能运行；HTTP 就绪检查请请求 `GET /`。
+GemRelay 默认使用独立的 `gemrelay-data` 卷；请在更换部署前自行备份。当前 healthcheck 只确认二进制能运行；HTTP 就绪检查请请求 `GET /`。
 
-也可从仓库根目录直接构建镜像：`docker build -f build/package/Dockerfile -t gemini-web2api-go .`。
+也可从仓库根目录直接构建镜像：`docker build -f build/package/Dockerfile -t gemrelay .`。
 
 旧版本启动输出示例（版本、模型和状态以当前运行结果为准）：
 
@@ -143,8 +143,7 @@ Cookie 池（按 URL、cookie 内容去重），之后一律从面板管理。�
 **面板改动 > CLI flag / `config.json` > 内置默认**。
 
 不用 Docker 直接跑二进制时，可以把 [`configs/config.example.json`](../configs/config.example.json) 复制成 `config.json` 当启动模板
-（不传 `--config` 时会自动找当前目录的 `config.json`，其次
-`$HOME/.config/gemini-web2api/config.json`）。里面的调优项面板改了就以面板为准，
+（配置读取范围为显式路径和工作目录的 `config.json`；缺失时使用内置默认值）。里面的调优项面板改了就以面板为准，
 `config.json` 只决定第一次启动的初值。
 
 命令行参数全集：
@@ -153,7 +152,7 @@ Cookie 池（按 URL、cookie 内容去重），之后一律从面板管理。�
 |---|---|
 | `--port` | 监听端口，默认 8083 |
 | `--config` | 指定 `config.json` 路径 |
-| `--db` | SQLite 路径，默认 `./data/gemini.db` |
+| `--db` | SQLite 路径，默认 `./data/gemrelay.db` |
 | `--admin-token` | 面板登录 token，留空 = 面板不鉴权（只有绑 127.0.0.1 才可接受） |
 | `--api-key` | 锁定 `/v1/*` 的 key（面板改不了），等价于 `API_KEY` 环境变量 |
 | `--cookie-file` | 启动时把文件里的 cookie 导入 Cookie 池 |

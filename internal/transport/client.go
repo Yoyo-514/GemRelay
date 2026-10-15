@@ -12,7 +12,7 @@ import (
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
 
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 var (

@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/pool"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/pool"
 )
 
 // loadCookie reads the cookie file (Netscape one-line format or JSON).

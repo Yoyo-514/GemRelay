@@ -10,7 +10,7 @@
 ```
 [OpenAI SDK / Cherry Studio / Cursor / dify / newapi / ...]
     ↓ http://localhost:8083/v1/chat/completions
-[gemini-web2api-go]
+[GemRelay]
     ↓ 逆向 gemini.google.com 网页协议
 [Google Gemini 网页端]
 ```
@@ -23,7 +23,7 @@
 
 ```bash
 curl http://localhost:8083/v1/chat/completions \
-  -H "Authorization: Bearer sk-gemini-..." \
+  -H "Authorization: Bearer sk-gemrelay-..." \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gemini-3.6-flash",
@@ -37,7 +37,7 @@ OpenAI Python SDK 也直接能用：
 from openai import OpenAI
 client = OpenAI(
     base_url="http://localhost:8083/v1",
-    api_key="sk-gemini-..."  # admin 面板里看
+    api_key="sk-gemrelay-..."  # admin 面板里看
 )
 resp = client.chat.completions.create(
     model="gemini-3.6-flash",
@@ -50,7 +50,7 @@ Windows PowerShell 下 `curl` 是 `Invoke-WebRequest` 的别名，会把 JSON �
 `curl.exe` 加 `--%`：
 
 ```powershell
-curl.exe --% http://127.0.0.1:8083/v1/chat/completions -H "Content-Type: application/json" -H "Authorization: Bearer sk-gemini-..." -d "{\"model\":\"gemini-3.6-flash\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello!\"}]}"
+curl.exe --% http://127.0.0.1:8083/v1/chat/completions -H "Content-Type: application/json" -H "Authorization: Bearer sk-gemrelay-..." -d "{\"model\":\"gemini-3.6-flash\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello!\"}]}"
 ```
 
 <a id="clients"></a>
@@ -62,7 +62,7 @@ curl.exe --% http://127.0.0.1:8083/v1/chat/completions -H "Content-Type: applica
 | 字段 | 值 |
 |---|---|
 | Base URL / API 地址 | `http://localhost:8083/v1`（部分客户端只要 `http://localhost:8083`，会自己拼 `/v1`） |
-| API Key | 管理面板「设置」页里的那个 `sk-gemini-…` |
+| API Key | 管理面板「设置」页里的那个 `sk-gemrelay-…` |
 | 模型 | `gemini-3.6-flash` |
 
 **newapi / one-api 建渠道**：类型选 OpenAI，Base URL 填 `http://localhost:8083`（跟 newapi 同在
@@ -95,7 +95,7 @@ Claude Code / Cursor 这类 MCP 客户端能「用 Gemini 去搜网」，返回*
   "mcpServers": {
     "gemini-search": {
       "url": "http://你的服务器:8083/mcp",
-      "headers": { "Authorization": "Bearer sk-gemini-你的key" }
+      "headers": { "Authorization": "Bearer sk-gemrelay-你的key" }
     }
   }
 }
@@ -103,7 +103,7 @@ Claude Code / Cursor 这类 MCP 客户端能「用 Gemini 去搜网」，返回*
 
 - `url` 指向后端的 `/mcp`；本机跑就是 `http://localhost:8083/mcp`。
 - `Authorization` 填 OpenAI 接口那把同样的 API key（面板「设置」页里看）。
-- Claude Code：`claude mcp add --transport http gemini-search http://localhost:8083/mcp --header "Authorization: Bearer sk-gemini-你的key"`。
+- Claude Code：`claude mcp add --transport http gemini-search http://localhost:8083/mcp --header "Authorization: Bearer sk-gemrelay-你的key"`。
 
 工具 `web_search(query)`：传一个查询/问题，返回 Gemini 联网查证后的答案，末尾附
 `Sources:` 来源清单。当前只有这一个工具（读取指定 URL 的 `url_context` 暂未做）。
@@ -196,7 +196,7 @@ data URL** 放进返回的 `content`：图片是 `![image](data:image/png;base64
 
 ```bash
 curl http://127.0.0.1:8083/v1/chat/completions \
-  -H "Authorization: Bearer sk-gemini-..." -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-gemrelay-..." -H "Content-Type: application/json" \
   -d '{"model":"gemini-image","messages":[{"role":"user","content":"画一只戴宇航员头盔的橘猫"}]}'
 ```
 

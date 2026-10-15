@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/pool"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/pool"
 )
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {

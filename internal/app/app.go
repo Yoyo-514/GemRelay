@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/httpapi"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/httpapi"
+	"gemrelay/internal/pool"
+	"gemrelay/internal/storage"
 )
 
-// maskKey shows "sk-gemini-XXXX...YYYY" for banner. Empty stays empty.
+// maskKey shows "sk-gemrelay-XXXX...YYYY" for banner. Empty stays empty.
 func maskKey(k string) string {
 	if k == "" {
 		return "(disabled)"
@@ -27,21 +27,21 @@ func maskKey(k string) string {
 	return k[:12] + "..." + k[len(k)-4:]
 }
 
-// Run 是进程入口，由 cmd/gemini-web2api/main.go 调用。
+// Run 是进程入口，由 cmd/gemrelay/main.go 调用。
 func Run() {
 	port := flag.Int("port", 0, "listening port (default: 8083 or config.json)")
 	configPath := flag.String("config", "", "path to config.json")
 	cookieFile := flag.String("cookie-file", "", "path to cookie file")
 	proxy := flag.String("proxy", "", "HTTP proxy fallback when proxy pool is empty")
 	impersonate := flag.String("impersonate", "", "TLS profile (chrome_146, chrome_133, firefox_147, ...)")
-	dbPath := flag.String("db", "", "SQLite path (default: ./data/gemini.db)")
+	dbPath := flag.String("db", "", "SQLite path (default: ./data/gemrelay.db)")
 	adminToken := flag.String("admin-token", "", "admin token (empty = no auth, only safe on 127.0.0.1)")
 	apiKey := flag.String("api-key", "", "API key for /v1/* (locked). Empty = use kv-table key (auto-gen on first boot, mutable from admin UI)")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("gemini-web2api-go %s\n", config.Version)
+		fmt.Printf("GemRelay %s\n", config.Version)
 		return
 	}
 
@@ -105,7 +105,7 @@ func Run() {
 	}
 	sort.Strings(modelNames)
 
-	fmt.Printf("gemini-web2api-go v%s\n", config.Version)
+	fmt.Printf("GemRelay v%s\n", config.Version)
 	fmt.Printf("  Listening:   http://%s\n", addr)
 	fmt.Printf("  Base URL:    http://localhost:%d/v1\n", config.Startup().Port)
 	fmt.Printf("  API key:     %s%s\n", maskKey(resolvedAPIKey),

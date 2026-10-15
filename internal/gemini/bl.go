@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 // bl 是上游前端的构建版本号，形如 boq_gemini-web-uiserver_20261007.01_p0，

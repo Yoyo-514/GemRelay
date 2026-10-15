@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/pool"
+	"gemrelay/internal/config"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/pool"
 )
 
 // keyCookieWants 是判断一条 cookie 是否"复制全了"要看的关键项。

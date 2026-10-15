@@ -13,7 +13,7 @@ import (
 
 	fhttp "github.com/bogdanfinn/fhttp"
 
-	"gemini-web2api/internal/transport"
+	"gemrelay/internal/transport"
 )
 
 // Gemini 在带登录 cookie 时要求 batchexecute 请求多带一个表单字段 at（XSRF token），

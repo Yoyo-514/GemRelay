@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/gemini"
 )
 
 func quotaFrame(rpc, payload string) string {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gemini-web2api/internal/cookies"
+	"gemrelay/internal/cookies"
 )
 
 // 服务端几乎每个响应都在刷新 SIDCC / __Secure-1PSIDCC / __Secure-3PSIDCC，

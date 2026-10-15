@@ -10,7 +10,7 @@ It turns a call like this:
 ```
 [OpenAI SDK / Cherry Studio / Cursor / dify / newapi / ...]
     ↓ http://localhost:8083/v1/chat/completions
-[gemini-web2api-go]
+[GemRelay]
     ↓ reverse-engineered gemini.google.com web protocol
 [Google Gemini web app]
 ```
@@ -23,7 +23,7 @@ The service proxies the browser protocol, not Google's official API ([generative
 
 ```bash
 curl http://localhost:8083/v1/chat/completions \
-  -H "Authorization: Bearer sk-gemini-..." \
+  -H "Authorization: Bearer sk-gemrelay-..." \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gemini-3.6-flash",
@@ -37,7 +37,7 @@ The OpenAI Python SDK works as-is:
 from openai import OpenAI
 client = OpenAI(
     base_url="http://localhost:8083/v1",
-    api_key="sk-gemini-..."  # find it in the admin panel
+    api_key="sk-gemrelay-..."  # find it in the admin panel
 )
 resp = client.chat.completions.create(
     model="gemini-3.6-flash",
@@ -49,7 +49,7 @@ print(resp.choices[0].message.content)
 On Windows PowerShell, `curl` is an alias for `Invoke-WebRequest` and will reinterpret the JSON quoting, so use `curl.exe` with `--%`:
 
 ```powershell
-curl.exe --% http://127.0.0.1:8083/v1/chat/completions -H "Content-Type: application/json" -H "Authorization: Bearer sk-gemini-..." -d "{\"model\":\"gemini-3.6-flash\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello!\"}]}"
+curl.exe --% http://127.0.0.1:8083/v1/chat/completions -H "Content-Type: application/json" -H "Authorization: Bearer sk-gemrelay-..." -d "{\"model\":\"gemini-3.6-flash\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello!\"}]}"
 ```
 
 <a id="clients"></a>
@@ -61,7 +61,7 @@ Every OpenAI-compatible client (Cherry Studio / ChatBox / Open WebUI / dify / Cu
 | Field | Value |
 |---|---|
 | Base URL | `http://localhost:8083/v1` (some clients want just `http://localhost:8083` and append `/v1` themselves) |
-| API key | the `sk-gemini-…` shown on the admin panel's Settings page |
+| API key | the `sk-gemrelay-…` shown on the admin panel's Settings page |
 | Model | `gemini-3.6-flash` |
 
 **newapi / one-api channel**: pick the OpenAI type, set the base URL to `http://localhost:8083` (use `http://host.docker.internal:8083` or the container name if newapi runs in Docker too), paste the API key, and list the models as `gemini-3.6-flash,gemini-3.5-flash-lite`.
@@ -92,7 +92,7 @@ account pool / proxy pool / rate limiting. Search works anonymously; no cookie r
   "mcpServers": {
     "gemini-search": {
       "url": "http://your-server:8083/mcp",
-      "headers": { "Authorization": "Bearer sk-gemini-your-key" }
+      "headers": { "Authorization": "Bearer sk-gemrelay-your-key" }
     }
   }
 }
@@ -100,7 +100,7 @@ account pool / proxy pool / rate limiting. Search works anonymously; no cookie r
 
 - `url` points at the backend's `/mcp`; locally it's `http://localhost:8083/mcp`.
 - `Authorization` is the same API key as the OpenAI endpoint (shown on the Settings page).
-- Claude Code: `claude mcp add --transport http gemini-search http://localhost:8083/mcp --header "Authorization: Bearer sk-gemini-your-key"`.
+- Claude Code: `claude mcp add --transport http gemini-search http://localhost:8083/mcp --header "Authorization: Bearer sk-gemrelay-your-key"`.
 
 The `web_search(query)` tool takes a query/question and returns Gemini's web-grounded
 answer with a `Sources:` list appended. It's the only tool for now (`url_context` — reading
@@ -177,7 +177,7 @@ Deep research is still **not implemented** (a multi-step async flow). The panel'
 
 ```bash
 curl http://127.0.0.1:8083/v1/chat/completions \
-  -H "Authorization: Bearer sk-gemini-..." -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-gemrelay-..." -H "Content-Type: application/json" \
   -d '{"model":"gemini-image","messages":[{"role":"user","content":"an orange cat in an astronaut helmet"}]}'
 ```
 

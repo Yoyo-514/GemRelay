@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/httpapi"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/httpapi"
 )
 
 func mismatchError() error {

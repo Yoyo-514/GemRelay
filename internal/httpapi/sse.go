@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"gemini-web2api/internal/gateway"
+	"gemrelay/internal/gateway"
 )
 
 // ChatStream 把 chat.completion.chunk 按 OpenAI 规范的顺序写出去：

@@ -1,4 +1,4 @@
-module gemini-web2api
+module gemrelay
 
 go 1.27.2
 

@@ -3,10 +3,10 @@ package app
 import (
 	"time"
 
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/pool"
+	"gemrelay/internal/storage"
 )
 
 // startScheduler kicks off background loops:

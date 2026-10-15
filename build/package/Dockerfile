@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build \
     -ldflags="-s -w" \
     -trimpath \
-    -o /out/gemini-web2api ./cmd/gemini-web2api
+    -o /out/gemrelay ./cmd/gemrelay
 
 # ─── Runtime stage ───────────────────────────────────────────────────────────
 # distroless/static: ~2MB base, no shell, no package manager — minimal attack surface.
@@ -41,17 +41,17 @@ RUN mkdir -p /out/data /out/app && chown -R 65532:65532 /out/data /out/app
 
 FROM gcr.io/distroless/static-debian12:nonroot
 
-# /data is owned by uid 65532 (nonroot) so sqlite can create gemini.db.
+# /data is owned by uid 65532 (nonroot) so sqlite can create gemrelay.db.
 COPY --from=prepare --chown=65532:65532 /out/data /data
 COPY --from=prepare --chown=65532:65532 /out/app /app
 
 WORKDIR /app
-COPY --from=builder /out/gemini-web2api /app/gemini-web2api
+COPY --from=builder /out/gemrelay /app/gemrelay
 
 USER nonroot:nonroot
 
 EXPOSE 8083
 
 # 数据库路径由下面的 --db 设置；程序不读取 DB_PATH 环境变量。
-ENTRYPOINT ["/app/gemini-web2api"]
-CMD ["--db", "/data/gemini.db", "--port", "8083"]
+ENTRYPOINT ["/app/gemrelay"]
+CMD ["--db", "/data/gemrelay.db", "--port", "8083"]

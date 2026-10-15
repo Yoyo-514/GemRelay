@@ -1,0 +1,53 @@
+name: CI
+
+# 主分支与版本标签由发布工作流调用，避免额外触发一份重复检查。
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # 镜像与二进制发布共用此检查，版本标签不匹配时都不能发布。
+      - name: Check version tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          code=$(sed -n 's/^const Version = "\(.*\)"$/\1/p' internal/config/version.go)
+          [ -n "$code" ] || { echo "::error::无法读取代码版本"; exit 1; }
+          [ "${GITHUB_REF_NAME#v}" = "$code" ] || { echo "::error::标签 $GITHUB_REF_NAME 与代码版本 $code 不一致"; exit 1; }
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check formatting
+        run: |
+          files=$(gofmt -l cmd internal tests web)
+          if [ -n "$files" ]; then
+            printf '%s\n' "$files"
+            echo "::error::请先运行 gofmt"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./... -count=1
+
+      - name: Build
+        run: go build ./...

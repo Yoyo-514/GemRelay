@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/pool"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/pool"
 )
 
 // RotateAccount 给一个账号做一次保活：先刷 1PSIDTS，再刷 SIDCC。

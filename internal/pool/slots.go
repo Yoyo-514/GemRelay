@@ -1,7 +1,7 @@
 package pool
 
 import (
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 // RateLimitError 表示所有 IP slot 都达到了限流上限。

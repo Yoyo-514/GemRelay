@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 // QuotaAccount 旁路读取账号，不改 last_used_at；指定账号时允许停用状态。

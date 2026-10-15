@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/gemini"
 )
 
 const mcpProtocolVersion = "2025-06-18"

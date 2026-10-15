@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/gemini"
 )
 
 func handleCreateVideo(w http.ResponseWriter, r *http.Request) {

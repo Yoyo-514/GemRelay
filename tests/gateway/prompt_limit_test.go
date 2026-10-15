@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gateway"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gateway"
 )
 
 func withBudget(t *testing.T, n int) { // n = 字节预算

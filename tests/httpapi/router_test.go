@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/httpapi"
-	"gemini-web2api/web/admin"
+	"gemrelay/internal/config"
+	"gemrelay/internal/httpapi"
+	"gemrelay/web/admin"
 )
 
 const apiKey = "sk-test-layout-key-for-router"

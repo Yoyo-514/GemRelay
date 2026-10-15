@@ -16,11 +16,11 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/google/uuid"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/internal/transport"
+	"gemrelay/internal/config"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/pool"
+	"gemrelay/internal/transport"
 )
 
 // convState 是一路 Gemini 原生会话的状态。整条会话绑定同一个 cookie / 出口，中途不换

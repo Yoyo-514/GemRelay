@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"gemini-web2api/internal/cookies"
+	"gemrelay/internal/cookies"
 )
 
 // QuotaMetric 是一档账号额度；允许上游报告最高 150% 的超额用量。

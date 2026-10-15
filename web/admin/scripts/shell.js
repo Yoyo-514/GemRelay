@@ -103,7 +103,7 @@ function renderShellMarkup(collapsed) {
         <button class="icon-btn" onclick="toggleSidebar()" title="收起 / 展开" aria-label="收起或展开侧边栏">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">${ICONS.menu}</svg>
         </button>
-        <span class="brand-text"><span class="spark"></span>gemini-web2api</span>
+        <span class="brand-text"><span class="spark"></span>GemRelay</span>
       </div>
       <nav aria-label="主要导航">
         ${NAV.map(([k, label]) => `

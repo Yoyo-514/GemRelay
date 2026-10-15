@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/internal/storage"
-	"gemini-web2api/tests/testutil"
+	"gemrelay/internal/config"
+	"gemrelay/internal/pool"
+	"gemrelay/internal/storage"
+	"gemrelay/tests/testutil"
 )
 
 func TestQuotaAccountIsReadOnly(t *testing.T) {

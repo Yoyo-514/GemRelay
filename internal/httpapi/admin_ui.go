@@ -4,7 +4,7 @@ import (
 	"io/fs"
 	"net/http"
 
-	"gemini-web2api/web/admin"
+	"gemrelay/web/admin"
 )
 
 func handleAdminUI(w http.ResponseWriter, r *http.Request) {

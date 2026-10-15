@@ -11,7 +11,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 var (
@@ -130,7 +130,7 @@ func DB() *dbx {
 			driver = "sqlite"
 			path := config.Startup().DBPath
 			if path == "" {
-				path = "./data/gemini.db"
+				path = "./data/gemrelay.db"
 			}
 			sqliteDir = filepath.Dir(path)
 			if err := os.MkdirAll(sqliteDir, 0o755); err != nil {
@@ -269,7 +269,7 @@ func dbPermHint(dir string) string {
 		"      当前进程 uid=%d，写不进目录 %s。\n"+
 		"      Docker 部署最常见的原因是 bind mount 的宿主目录属主是 root，\n"+
 		"      而镜像以 nonroot(65532) 运行。两种解法：\n"+
-		"        1) 改用具名卷（推荐）：volumes 写 gw2a-data:/data\n"+
+		"        1) 改用具名卷（推荐）：volumes 写 gemrelay-data:/data\n"+
 		"        2) 保留 bind mount 就把属主改过来：sudo chown -R 65532:65532 ./data\n",
 		uid, dir)
 }

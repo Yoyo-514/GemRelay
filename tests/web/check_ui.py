@@ -40,10 +40,10 @@ def main():
     )
     if browser is None:
         parser.error("未找到 Chromium，请用 --browser 指定可执行文件")
-    output = args.output or Path(tempfile.mkdtemp(prefix="gw2a-ui-"))
+    output = args.output or Path(tempfile.mkdtemp(prefix="gemrelay-ui-"))
     output.mkdir(parents=True, exist_ok=True)
     target = Path(__file__).with_name("admin-ui.html").resolve().as_uri()
-    with tempfile.TemporaryDirectory(prefix="gw2a-browser-") as profile:
+    with tempfile.TemporaryDirectory(prefix="gemrelay-browser-") as profile:
         with (output / "browser.log").open("w", encoding="utf-8") as log:
             process = subprocess.Popen(
                 [

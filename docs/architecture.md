@@ -10,7 +10,7 @@
 
 | 位置 | 职责 |
 |---|---|
-| [程序入口](../cmd/gemini-web2api/main.go) | 调用启动装配，不包含业务实现 |
+| [程序入口](../cmd/gemrelay/main.go) | 调用启动装配，不包含业务实现 |
 | [启动装配](../internal/app/) | 参数覆盖、初始化顺序、监听启动、后台任务调度 |
 | [配置](../internal/config/) | 启动配置、运行时快照、版本和现有请求日志开关 |
 | [HTTP adapter](../internal/httpapi/) | 路由、鉴权、协议编解码、SSE、管理页面和错误映射 |
@@ -112,7 +112,7 @@ go test ./tests/... -coverpkg=./internal/...,./web/... -coverprofile=coverage.ou
 
 | 原位置 | 当前位置 |
 |---|---|
-| 根目录入口 | [命令入口](../cmd/gemini-web2api/main.go) |
+| 根目录入口 | [命令入口](../cmd/gemrelay/main.go) |
 | 根目录配置模板 | [配置模板](../configs/config.example.json) |
 | 根目录容器定义 | [镜像构建定义](../build/package/Dockerfile) |
 | 根目录部署定义 | [Compose 配置](../deployments/docker-compose.yml) |
@@ -122,16 +122,15 @@ go test ./tests/... -coverpkg=./internal/...,./web/... -coverprofile=coverage.ou
 从仓库根目录构建可执行程序或镜像：
 
 ```sh
-go build -o gemini-web2api-go ./cmd/gemini-web2api
-docker build -f build/package/Dockerfile -t gemini-web2api-go .
+go build -o gemrelay ./cmd/gemrelay
+docker build -f build/package/Dockerfile -t gemrelay .
 docker compose -f deployments/docker-compose.yml up -d
 ```
 
 Compose 默认构建当前仓库的本地镜像，管理员令牌必须提供。构建上下文是仓库根目录，
 配置中的容器定义路径相对于该上下文；相对绑定挂载路径则相对于部署文件所在目录。
-从新部署文件启动已有部署前，应保留原有 Compose 项目名或显式指定原项目名，
-避免为原数据卷创建另一个项目前缀。不要删除原卷。
+GemRelay 使用独立的数据卷与数据库文件名。旧项目的数据保留在原位置，由使用者自行备份和迁移。
 
 本仓 Compose 需要完整源码，不能只下载该文件运行。构建忽略规则采用允许列表，排除本地配置、凭据和数据库；镜像仅复制生产入口、内部代码和嵌入资源。
-配置模板迁移不会改变默认配置查找位置、数据库默认路径、配置键或环境变量优先级。
+配置读取范围为显式路径或当前工作目录。默认数据库为 `./data/gemrelay.db`，Compose 卷名为 `gemrelay-data`。
 HTTP 路由、响应字段、数据库结构和网络回退策略保持原有约定。

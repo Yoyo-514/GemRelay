@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gemini-web2api/internal/gateway"
+	"gemrelay/internal/gateway"
 )
 
 // handleAdminQuota 查询网页端账号额度，失败通过 ok:false 表达，不影响生成接口。

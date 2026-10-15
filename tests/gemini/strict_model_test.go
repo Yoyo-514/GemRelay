@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/gemini"
 )
 
 func TestModelDowngraded(t *testing.T) {

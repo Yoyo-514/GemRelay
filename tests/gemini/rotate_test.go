@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/gemini"
 )
 
 // 哨兵必须是这串 JSPB，不能走 json.Marshal：后者会把 000 收成 0，服务端不认。

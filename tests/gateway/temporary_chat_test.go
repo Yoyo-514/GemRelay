@@ -3,8 +3,8 @@ package tests
 import (
 	"testing"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gateway"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gateway"
 )
 
 // temporaryChatEligible 的不变量：temporary_chat 开着才走临时对话，且 multi_turn 一律压制

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"gemini-web2api/tests/testutil"
+	"gemrelay/tests/testutil"
 )
 
 func TestMain(m *testing.M) { os.Exit(testutil.Run(m)) }

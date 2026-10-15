@@ -3,8 +3,8 @@ package gateway
 import (
 	"fmt"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gemini"
 )
 
 // ModelDowngradeError 保留模型不匹配的证据，供 HTTP 与流式错误统一分类。

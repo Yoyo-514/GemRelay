@@ -1,13 +1,13 @@
 services:
-  gemini-web2api:
+  gemrelay:
     # 构建当前仓库版本，不默认拉取原项目镜像。需要 Docker Compose v2。
     # 从仓库根目录运行：docker compose -f deployments/docker-compose.yml up -d --build
-    image: gemini-web2api-go:local
+    image: gemrelay:local
     pull_policy: build
     build:
       context: ..
       dockerfile: build/package/Dockerfile
-    container_name: gemini-web2api
+    container_name: gemrelay
     restart: unless-stopped
 
     # ── 这里只放"改了必须重启进程"的东西 ──────────────────────────────────
@@ -29,7 +29,7 @@ services:
       # 会用宿主目录的属主盖掉镜像里 /data 的属主。宿主上目录不存在时 Docker 自动建、
       # 属主是 root，容器就写不进去，报 `unable to open database file (14)`。
       # 具名卷由 Docker 从镜像继承属主，不会踩这个坑。
-      - gw2a-data:/data                           # SQLite + 历史记录持久化
+      - gemrelay-data:/data                           # SQLite + 历史记录持久化
       # 一定要用 bind mount 的话，先把属主改过来：sudo chown -R 65532:65532 ../data
       # - ../data:/data
       # - ../cookie.txt:/app/cookie.txt:ro         # 可选：启动时把这个文件导入 Cookie 池
@@ -39,18 +39,18 @@ services:
       ADMIN_TOKEN: "${ADMIN_TOKEN:?Set ADMIN_TOKEN before starting the service}"
       # 可选：锁定 /v1/* 和 /mcp 的 API key，设了之后面板改不了。
       # 不设则首次启动自动生成，在面板里轮换。
-      # API_KEY: "sk-gemini-your-key"
+      # API_KEY: "sk-gemrelay-your-key"
       # 可选：切换数据库；包含凭据，建议通过外部环境文件管理，不提交到仓库。
       # SQL_DSN: "${SQL_DSN}"
       TZ: "${TZ:-UTC}"
 
-    # 镜像自带 CMD ["--db","/data/gemini.db","--port","8083"]，一般不用改。
+    # 镜像自带 CMD ["--db","/data/gemrelay.db","--port","8083"]，一般不用改。
     # 只有要加参数时才写 command，写了就会整个覆盖掉默认值，别漏 --db。
-    # command: ["--db", "/data/gemini.db", "--port", "8083", "--cookie-file", "/app/cookie.txt"]
+    # command: ["--db", "/data/gemrelay.db", "--port", "8083", "--cookie-file", "/app/cookie.txt"]
 
     healthcheck:
       # 仅检查二进制能否运行；服务 HTTP 就绪探测应额外请求 GET /。
-      test: ["CMD", "/app/gemini-web2api", "--version"]
+      test: ["CMD", "/app/gemrelay", "--version"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -62,5 +62,5 @@ services:
         max-file: "3"
 
 volumes:
-  # 已有部署继续使用原 Compose 项目名（-p），不要通过 down -v 删除原数据卷。
-  gw2a-data:
+  # GemRelay 独立数据卷。
+  gemrelay-data:

@@ -10,7 +10,7 @@ import (
 
 	fhttp "github.com/bogdanfinn/fhttp"
 
-	"gemini-web2api/internal/transport"
+	"gemrelay/internal/transport"
 )
 
 // 两步 resumable，对齐浏览器抓包。也存在单次 multipart 打 content-push.googleapis.com

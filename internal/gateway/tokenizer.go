@@ -21,7 +21,7 @@ var (
 func InitTokenizer() {
 	tokenizerOnce.Do(func() {
 		// tiktoken-go 第一次加载会从远端下 cl100k_base.tiktoken (~3MB)，
-		// 缓存到 ${TIKTOKEN_CACHE_DIR} 或 ${HOME}/.cache/tiktoken。
+		// 缓存优先使用 TIKTOKEN_CACHE_DIR / DATA_GYM_CACHE_DIR，否则使用系统临时目录。
 		// docker 镜像里建议预先 docker build 时缓存。
 		t, err := tiktoken.GetEncoding("cl100k_base")
 		if err != nil {

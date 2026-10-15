@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/gemini"
 )
 
 // cfb2h 是从上游页面 HTML 里抠出来的，属于外部输入直接进 URL。

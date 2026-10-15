@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/pool"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/pool"
 )
 
 // QuotaSnapshot 是独立的账号额度快照，不包含 Cookie、代理 URL 或其他凭据。

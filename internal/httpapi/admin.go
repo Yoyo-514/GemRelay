@@ -12,15 +12,15 @@ import (
 	"strings"
 	"time"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/pool"
+	"gemrelay/internal/storage"
 )
 
 const (
-	sessionCookieName = "gemini_admin_session"
+	sessionCookieName = "gemrelay_admin_session"
 	sessionTTL        = 7 * 24 * time.Hour
 )
 
@@ -31,7 +31,7 @@ func newSessionToken() string {
 }
 
 // authOK accepts either:
-//  1. Cookie gemini_admin_session matching a valid sessions row
+//  1. Cookie gemrelay_admin_session matching a valid sessions row
 //  2. Authorization: Bearer <admin_token>
 //  3. ?token=<admin_token> query param (for embedded HTML <a href> use)
 func authOK(r *http.Request) bool {

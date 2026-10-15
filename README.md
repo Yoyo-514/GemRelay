@@ -1,9 +1,9 @@
-# gemini-web2api-go
+# GemRelay
 
 把 Gemini 网页端转成 OpenAI 兼容 API 的 Go 服务，自带账号池、代理池和管理面板。
 本仓基于 [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-go) 修改，包含目录重构、严格模型校验、账号额度查询及移动端管理界面。
 
-<img src="docs/banner.svg" alt="gemini-web2api-go：Gemini 网页端到 OpenAI 兼容 API" width="100%">
+<img src="docs/banner.svg" alt="GemRelay：Gemini 网页端到 OpenAI 兼容 API" width="100%">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.27.2%2B-00ADD8.svg)](go.mod)
@@ -44,17 +44,17 @@
 源码构建需要 Go 1.27.2 或更新版本。在本仓根目录执行：
 
 ```bash
-go build -o gemini-web2api-go ./cmd/gemini-web2api
-./gemini-web2api-go --port 8083 --admin-token your-admin-token
+go build -o gemrelay ./cmd/gemrelay
+./gemrelay --port 8083 --admin-token your-admin-token
 ```
 
-打开 `http://localhost:8083/admin`，用管理员令牌登录，在「设置」页查看 API Key。默认数据库为 `./data/gemini.db`，首次启动会生成 API Key。
+打开 `http://localhost:8083/admin`，用管理员令牌登录，在「设置」页查看 API Key。默认数据库为 `./data/gemrelay.db`，首次启动会生成 API Key。
 
 调用示例：
 
 ```bash
 curl http://localhost:8083/v1/chat/completions \
-  -H "Authorization: Bearer sk-gemini-..." \
+  -H "Authorization: Bearer sk-gemrelay-..." \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gemini-3.6-flash",

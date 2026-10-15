@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"gemini-web2api/internal/gateway"
+	"gemrelay/internal/gateway"
 )
 
 func generationErrorBody(err error) map[string]string {

@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/internal/storage"
-	"gemini-web2api/tests/testutil"
+	"gemrelay/internal/config"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/pool"
+	"gemrelay/internal/storage"
+	"gemrelay/tests/testutil"
 )
 
 func TestMigrateLegacyCookie(t *testing.T) {

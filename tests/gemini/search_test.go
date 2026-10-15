@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"gemini-web2api/internal/gemini"
+	"gemrelay/internal/gemini"
 )
 
 // 用一份真实抓下来的联网搜索响应，验证 grounding 来源能被解析出来。

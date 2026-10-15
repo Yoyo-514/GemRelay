@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/pool"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/pool"
 )
 
 // CheckAccountCookie 判断一条 cookie 还有没有登录态。

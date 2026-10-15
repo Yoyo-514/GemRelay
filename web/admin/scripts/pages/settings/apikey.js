@@ -37,7 +37,7 @@ async function customKey() {
     title: '设置自定义 API Key',
     desc: '至少 20 字符。设置后所有客户端要更换为新 Key。',
     label: '新 Key',
-    placeholder: 'sk-gemini-...',
+    placeholder: 'sk-gemrelay-...',
     password: true,
   });
   if (!k) return;

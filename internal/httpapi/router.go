@@ -3,7 +3,7 @@ package httpapi
 import (
 	"net/http"
 
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 // NewHandler 注册兼容接口、MCP 和管理路由，不启动监听或后台任务。

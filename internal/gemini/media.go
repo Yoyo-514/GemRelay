@@ -14,8 +14,8 @@ import (
 
 	fhttp "github.com/bogdanfinn/fhttp"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/transport"
+	"gemrelay/internal/config"
+	"gemrelay/internal/transport"
 )
 
 // inner[49] 媒体工具开关：填了服务端就换后端模型生成产物。

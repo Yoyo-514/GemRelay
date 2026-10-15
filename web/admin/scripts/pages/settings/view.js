@@ -57,7 +57,7 @@ function renderSettingsPage(k) {
               <tbody></tbody>
             </table>
             <p class="lede" style="margin:14px 0 0;">
-              gemini-web2api-go · 单二进制 · token 数为本地估算
+              GemRelay · 单二进制 · token 数为本地估算
             </p>
           </div>
         </div>

@@ -28,6 +28,7 @@ try {
   assertUI(parseCookieStr('SAPISID=a=b; SID=x').SAPISID === 'a=b', '拆分后 Cookie 解析应保留等号');
 
   document.getElementById('app').innerHTML = renderShellMarkup(false);
+  assertUI(document.querySelector('.brand-text').textContent.includes('GemRelay'), '管理面板应显示 GemRelay 品牌');
   document.getElementById('pageTitle').textContent = 'Cookie 池';
   const items = [
     { id: 1, label: '主账号', status: 'enabled', health: 'ok', has_1psidts: true },

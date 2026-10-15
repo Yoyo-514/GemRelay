@@ -1,5 +1,5 @@
 package main
 
-import "gemini-web2api/internal/app"
+import "gemrelay/internal/app"
 
 func main() { app.Run() }

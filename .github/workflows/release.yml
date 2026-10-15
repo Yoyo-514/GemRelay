@@ -6,11 +6,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # 建 Release、传附件要写权限
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
+  check:
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: check
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write   # 建 Release、传附件要写权限
     steps:
       - uses: actions/checkout@v4
 
@@ -19,36 +30,45 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # tag 和代码里的 Version 常量对不上就直接失败。
-      # 否则会发出一个 v4.0.1 的包、里面 --version 却打印 4.0.0，
-      # 而这种错要等用户报上来才会发现。
-      - name: Check tag matches Version
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Resolve artifact version
+        id: version
         run: |
-          tag="${GITHUB_REF_NAME#v}"
-          # 用 sed 不用 grep -oP：-P 依赖 PCRE 且在非 UTF-8 locale 下直接罢工
           code=$(sed -n 's/^const Version = "\(.*\)"$/\1/p' internal/config/version.go)
-          echo "tag=$tag  internal/config/version.go=$code"
-          [ "$tag" = "$code" ] || { echo "::error::tag $tag 与 internal/config/version.go 里的 $code 不一致"; exit 1; }
-
-      - run: go test ./...
+          [ -n "$code" ] || { echo "::error::无法读取代码版本"; exit 1; }
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            ver="$GITHUB_REF_NAME"
+          else
+            ver="v${code}-${GITHUB_SHA:0:7}"
+          fi
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
 
       # CGO_ENABLED=0：SQLite 用的是 modernc.org/sqlite（纯 Go），
       # 所以交叉编译不需要各平台的 C 工具链，直接 GOOS/GOARCH 就行。
       - name: Cross compile
         env:
           CGO_ENABLED: "0"
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p dist
-          ver="${GITHUB_REF_NAME}"
+          ver="$VERSION"
           for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
             os="${target%/*}"; arch="${target#*/}"
-            out="dist/gemini-web2api-go_${ver}_${os}_${arch}"
+            out="dist/gemrelay_${ver}_${os}_${arch}"
             [ "$os" = "windows" ] && bin="$out.exe" || bin="$out"
             echo "building $bin"
-            GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags="-s -w" -o "$bin" ./cmd/gemini-web2api
+            GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags="-s -w" -o "$bin" ./cmd/gemrelay
           done
           cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      # 手动构建也保留二进制与校验和，不创建或修改正式 Release。
+      - name: Upload build artifacts
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemrelay-${{ steps.version.outputs.version }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
 
       # 从 CHANGELOG.md 抽出本 tag 对应的那一节，拼进 Release 说明。
       # 抽法：从 `## <版本号>` 那行的下一行起，到下一个 `## ` 之前。
@@ -61,8 +81,8 @@ jobs:
             echo "单二进制，下载对应平台的那个直接跑，不需要 Go 也不需要 Docker："
             echo
             echo '```bash'
-            echo 'chmod +x gemini-web2api-go_*'
-            echo './gemini-web2api-go_* --port 8083 --admin-token your-admin-token'
+            echo 'chmod +x gemrelay_*'
+            echo './gemrelay_* --port 8083 --admin-token your-admin-token'
             echo '```'
             echo
             echo "容器部署见 \`ghcr.io/${{ github.repository }}\`。校验完整性用 \`SHA256SUMS.txt\`。"

@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/gateway"
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/storage"
-	"gemini-web2api/tests/testutil"
+	"gemrelay/internal/config"
+	"gemrelay/internal/gateway"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/storage"
+	"gemrelay/tests/testutil"
 )
 
 func TestStrictModelViolation(t *testing.T) {

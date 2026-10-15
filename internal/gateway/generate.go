@@ -12,11 +12,11 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/google/uuid"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/gemini"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/internal/transport"
+	"gemrelay/internal/config"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/gemini"
+	"gemrelay/internal/pool"
+	"gemrelay/internal/transport"
 )
 
 // HasCookie 表示 cookie 池里有没有可用账号。决定 3.1 Pro 是否出现在模型列表里。

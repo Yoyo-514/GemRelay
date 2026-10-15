@@ -13,7 +13,7 @@ import (
 
 	fhttp "github.com/bogdanfinn/fhttp"
 
-	"gemini-web2api/internal/transport"
+	"gemrelay/internal/transport"
 )
 
 // Gemini 服务端认的模型 id，来自 batchexecute?rpcids=otAQ7b 返回的权威清单。

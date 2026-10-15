@@ -7,8 +7,8 @@ import (
 
 	fhttp "github.com/bogdanfinn/fhttp"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/transport"
+	"gemrelay/internal/config"
+	"gemrelay/internal/transport"
 )
 
 func withBrowserProfile(t *testing.T, name string) {

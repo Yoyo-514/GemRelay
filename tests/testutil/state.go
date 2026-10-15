@@ -3,9 +3,9 @@ package testutil
 import (
 	"testing"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/pool"
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/config"
+	"gemrelay/internal/pool"
+	"gemrelay/internal/storage"
 )
 
 func ResetState(t *testing.T) {

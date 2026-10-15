@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/cookies"
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/config"
+	"gemrelay/internal/cookies"
+	"gemrelay/internal/storage"
 )
 
 // CookieAccount 是 cookie 池里的一行：一个 Google 登录态账号。

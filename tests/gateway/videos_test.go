@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"gemini-web2api/internal/gateway"
+	"gemrelay/internal/gateway"
 )
 
 func TestVideoJobFailureAndSnapshot(t *testing.T) {

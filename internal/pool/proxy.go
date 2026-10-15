@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"gemini-web2api/internal/config"
-	"gemini-web2api/internal/storage"
+	"gemrelay/internal/config"
+	"gemrelay/internal/storage"
 )
 
 type Proxy struct {

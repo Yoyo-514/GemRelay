@@ -1,9 +1,9 @@
-# gemini-web2api-go
+# GemRelay
 
 A Go service that exposes the Gemini web app through an OpenAI-compatible API, with account and proxy pools and an admin panel.
 Based on [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-go), this version adds a modular layout, strict model checks, account quota queries and a mobile admin interface.
 
-<img src="../banner.svg" alt="gemini-web2api-go: Gemini web to OpenAI-compatible API" width="100%">
+<img src="../banner.svg" alt="GemRelay: Gemini web to OpenAI-compatible API" width="100%">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.27.2%2B-00ADD8.svg)](../../go.mod)
@@ -49,17 +49,17 @@ The service proxies the web protocol and needs no Google API key. Two text model
 Source builds require Go 1.27.2 or newer. Run from this checkout's root:
 
 ```bash
-go build -o gemini-web2api-go ./cmd/gemini-web2api
-./gemini-web2api-go --port 8083 --admin-token your-admin-token
+go build -o gemrelay ./cmd/gemrelay
+./gemrelay --port 8083 --admin-token your-admin-token
 ```
 
-Open `http://localhost:8083/admin`, sign in with the admin token, and find the API key on the Settings page. The default database is `./data/gemini.db`; the service generates an API key on first boot.
+Open `http://localhost:8083/admin`, sign in with the admin token, and find the API key on the Settings page. The default database is `./data/gemrelay.db`; the service generates an API key on first boot.
 
 Make a request:
 
 ```bash
 curl http://localhost:8083/v1/chat/completions \
-  -H "Authorization: Bearer sk-gemini-..." \
+  -H "Authorization: Bearer sk-gemrelay-..." \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gemini-3.6-flash",

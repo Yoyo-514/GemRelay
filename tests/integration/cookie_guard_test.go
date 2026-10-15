@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"gemini-web2api/internal/httpapi"
-	"gemini-web2api/internal/pool"
+	"gemrelay/internal/httpapi"
+	"gemrelay/internal/pool"
 )
 
 func TestAccountErrorPreservesFullText(t *testing.T) {

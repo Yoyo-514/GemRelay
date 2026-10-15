@@ -1,7 +1,6 @@
 # ─── Build artifacts ──────
 *.exe
-/gemini-web2api-go
-/gemini-web2api
+/gemrelay
 
 # ─── Runtime data ─────────
 data/

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 type ipSlot struct {

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"gemini-web2api/internal/config"
+	"gemrelay/internal/config"
 )
 
 // AggregateHourlyCatchup walks every hour bucket from the latest aggregated
