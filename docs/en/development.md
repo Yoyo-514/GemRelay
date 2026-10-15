@@ -31,7 +31,7 @@ The top-level layout follows the relevant parts of [golang-standards/project-lay
 
 Run verification from the repository root:
 
-On Windows, use `go build -o gemrelay.exe ./cmd/gemrelay` when you need an executable file. The all-package build check below does not leave an executable in the repository root.
+On Windows, use `go build -o gemrelay.exe ./cmd/gemrelay` to create an executable. The all-package build command below checks compilation only.
 
 ```bash
 go build ./...
@@ -39,27 +39,25 @@ go test ./... -count=1
 go vet ./...
 ```
 
-Each test package uses a temporary SQLite database and ignores production DSNs. The live upload probe requires explicit opt-in through its environment variable. See the [architecture notes](../architecture.md) for package responsibilities and migration details.
-
-GemRelay uses its own database filename and data volume. Configuration comes from an explicit path or the working directory. Existing project data stays in its original location.
+Each test package uses a temporary SQLite database and clears production DSN environment overrides. The live upload probe requires explicit opt-in through its environment variable. See the [architecture notes](../architecture.md) for package responsibilities and migration details.
 
 ## Continuous integration
 
 PRs run Go formatting, `go vet`, tests and a build. Image and binary publishing reuse these checks; version tags must also match the code version.
-Main-branch pushes still publish images, and version tags publish images and a Release. When manually triggered on a non-version-tag ref, the Release workflow retains build artifacts for 7 days without creating a formal Release.
+Main-branch pushes publish images; version tags publish images and a Release. Manual runs on other refs retain build artifacts for 7 days as Actions artifacts.
 
 ## Container verification with WSLC on Windows
 
-If WSLC is installed, build and run the image without requiring a conventional WSL distribution:
+WSLC provides its own container runtime. Once installed, use it to build and run the image:
 
 ```powershell
 wslc build --progress plain -f "build/package/Dockerfile" -t "gemrelay:local" "."
 wslc run --rm --publish "127.0.0.1:18083:8083" --env "ADMIN_TOKEN=local-verification-only" "gemrelay:local"
 ```
 
-This uses only the test container's writable database and mounts no existing volume. Once ready, check `http://127.0.0.1:18083/` and the admin page. Stopping the container removes its temporary data through `--rm`.
+This uses the test container's own database, isolated from existing volumes. Once ready, check `http://127.0.0.1:18083/` and the admin page. Stopping the container removes its temporary data through `--rm`.
 
-An image build and a standalone container test do not verify Compose orchestration. Use Docker Compose v2 to check environment expansion, project naming and named-volume behavior.
+Use WSLC to verify image builds and standalone containers, and Docker Compose v2 to verify environment expansion, project naming and named-volume behavior.
 
 ---
 

@@ -10,24 +10,22 @@ Based on [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-g
 
 [中文](../../README.md) | English
 
-The service proxies the web protocol and needs no Google API key. Two text models work anonymously; other models and media features depend on account access and web-app quotas.
+The service accesses Gemini through its web protocol, using anonymous requests or Google account cookies. Two text models work anonymously; other models and media features depend on account access and web-app quotas.
 
 ## Features
 
 **API**
 - OpenAI-compatible: `/v1/chat/completions`, `/v1/models`, `/v1/responses`
 - `/v1/videos`: OpenAI (Sora)-shaped async video generation — `POST` to create, `GET /v1/videos/{id}` to poll, `GET /v1/videos/{id}/content` to download the MP4 (needs a signed-in Pro cookie)
-- Real incremental streaming for plain chat
+- Incremental text streaming as upstream response frames arrive
 - Bearer token / `x-api-key` auth; the key can be rotated from the panel
-- `usage` computed with tiktoken; `reasoning_tokens` counted separately, not folded
-  into `completion_tokens`
+- `usage` estimated with tiktoken; `reasoning_tokens` and `completion_tokens` counted separately
 
 **Models**
 - `gemini-3.6-flash` and `gemini-3.5-flash-lite` work anonymously, web search included
 - `gemini-3.1-pro` needs account access; reasoning is returned when upstream supplies it
 - Text models offer extended-thinking variants with a cookie (`reasoning_content`)
-- Every response records which model the backend **actually** used, so silent
-  downgrades are visible
+- Records the actual model reported by upstream to help identify downgrades
 
 **Accounts and exits**
 - Configurable browser TLS profiles for direct connections, Chrome 146 by default; proxies use Go's standard HTTP client
@@ -41,8 +39,7 @@ The service proxies the web protocol and needs no Google API key. Two text model
 - SQLite persistence: 30 days of per-request detail plus permanent aggregates (optional MySQL / PostgreSQL via `SQL_DSN`)
 - Admin panel: overview / requests / proxy pool / cookie pool / settings, with
   runtime settings on the panel; restarting applies timeout changes to existing clients
-- **Prompt and response bodies are never stored** — metadata only (length, latency,
-  model, status)
+- Request records contain metadata only: length, latency, model and status
 
 ## Quick start
 
@@ -69,7 +66,7 @@ curl http://localhost:8083/v1/chat/completions \
 
 Set the client's base URL to `http://localhost:8083/v1`, use the key from the panel, and start with `gemini-3.6-flash`.
 
-See [Deployment and configuration](deployment.md) for Docker, databases and settings. Compose builds this checkout by default. Prebuilt binaries and remote image links refer to upstream and may not contain this version's additions.
+See [Deployment and configuration](deployment.md) for Docker, databases and settings. Compose builds this checkout by default.
 
 ## Documentation
 
@@ -83,15 +80,15 @@ See [Deployment and configuration](deployment.md) for Docker, databases and sett
 
 ## Before using it
 
-- This service relies on a reverse-engineered web protocol. Upstream changes can break it; it is not Google's official API.
+- This service uses a reverse-engineered web protocol, separate from Google's official API. Upstream changes can affect availability.
 - Function calling uses prompt conventions. Some OpenAI parameters have no upstream equivalent; see [protocol coverage](api.md#protocol).
-- Strict model checks are off by default. When enabled, a confirmed model mismatch becomes an error; content already streamed cannot be retracted.
-- Account access, context length and exit rate limits still apply. Do not treat a model's success claim as verification of a sensitive action.
-- The database stores request metadata, not prompt or response bodies. Set an admin token and restrict access when deploying.
+- Strict model checks are off by default. When enabled, a confirmed model mismatch becomes an error; a streaming client may already have received part of the response.
+- Account access, context length and exit rate limits follow the web app. Verify the actual result of sensitive actions.
+- Set an admin token and restrict access when deploying.
 
 ## Acknowledgments
 
-- [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-go): the upstream Go project on which this repository is based.
+- [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-go): the Go project this repository is based on.
 - [bogdanfinn/tls-client](https://github.com/bogdanfinn/tls-client) — real Chrome TLS fingerprints
 - [pkoukk/tiktoken-go](https://github.com/pkoukk/tiktoken-go) — BPE tokenizer
 - [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) — pure-Go SQLite (CGO-free, builds straight on alpine)

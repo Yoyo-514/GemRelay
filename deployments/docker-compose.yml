@@ -1,6 +1,6 @@
 services:
   gemrelay:
-    # 构建当前仓库版本，不默认拉取原项目镜像。需要 Docker Compose v2。
+    # 构建当前仓库版本，需要 Docker Compose v2。
     # 从仓库根目录运行：docker compose -f deployments/docker-compose.yml up -d --build
     image: gemrelay:local
     pull_policy: build

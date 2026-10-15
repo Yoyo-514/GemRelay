@@ -4,25 +4,22 @@
 
 命令均从仓库根目录执行。
 
-> 本文中的 Release 与远程镜像地址指向[原项目](https://github.com/zexadev/gemini-web2api-go)，不保证包含本仓新增功能。本仓的 Compose 默认构建当前源码，不拉取原项目镜像。
-
 <a id="quick-start"></a>
 
 ## 快速开始
 
-### 下载二进制（最省事）
+### 下载预编译二进制
 
-[Releases](https://github.com/zexadev/gemini-web2api-go/releases) 里挑对应平台的下载，
-不用 Go、不用 Docker，单个文件就是全部：
+从 [Releases](https://github.com/Yoyo-514/gemrelay/releases) 下载对应平台的单文件程序，直接运行：
 
 ```bash
-chmod +x gemini-web2api-go_*
-./gemini-web2api-go_* --port 8083 --admin-token your-admin-token
+chmod +x gemrelay_*
+./gemrelay_* --port 8083 --admin-token your-admin-token
 ```
 
 数据默认落在 `./data/gemrelay.db`，换位置加 `--db /your/path.db`。
 
-想用 MySQL / PostgreSQL，设 `SQL_DSN` 环境变量即可（不设就是 SQLite，无需改动）：
+数据库默认为 SQLite。使用 MySQL / PostgreSQL 时，设置 `SQL_DSN` 环境变量：
 
 ```bash
 # MySQL（也接受 go-sql-driver 原生 user:pass@tcp(host:3306)/dbname）
@@ -31,16 +28,19 @@ SQL_DSN="mysql://user:pass@host:3306/dbname"
 SQL_DSN="postgres://user:pass@host:5432/dbname?sslmode=disable"
 ```
 
-建表自动完成，三种库共用同一套 schema。单机就用默认 SQLite 最省事，多实例共享一个池子才需要 MySQL/PG。
+建表自动完成，三种库共用同一套 schema。单实例可使用默认 SQLite，多实例共享池数据可使用 MySQL / PostgreSQL。
 
-### Docker（不用源码）
+### 运行本地 Docker 镜像
+
+从仓库根目录构建并运行：
 
 ```bash
-docker run -d --name gemini-web2api \
+docker build -f build/package/Dockerfile -t gemrelay:local .
+docker run -d --name gemrelay \
   -p 127.0.0.1:8083:8083 \
-  -v "$PWD/data:/data" \
+  -v gemrelay-data:/data \
   -e ADMIN_TOKEN=your-admin-token \
-  ghcr.io/zexadev/gemini-web2api-go:latest
+  gemrelay:local
 ```
 
 使用 Docker Compose v2 时，从当前仓库根目录执行。配置会构建本地镜像 `gemrelay:local`，管理员令牌必须提供：
@@ -51,20 +51,18 @@ ADMIN_TOKEN=your-admin-token docker compose -f deployments/docker-compose.yml up
 
 ### 从源码跑
 
-需要 Go 1.27.2 或更新版本。在本仓根目录执行，不要用原项目源码代替当前版本：
+需要 Go 1.27.2 或更新版本。在本仓根目录执行：
 
 ```bash
 go build -o gemrelay ./cmd/gemrelay
 ./gemrelay --port 8083 --admin-token your-admin-token
 ```
 
-本仓的 [部署配置](../deployments/docker-compose.yml) 已启用源码构建，需要完整仓库，不能只下载该文件运行。构建上下文为仓库根目录，镜像定义位于 [build/package/Dockerfile](../build/package/Dockerfile)。[构建忽略规则](../.dockerignore)仅允许生产源码、模块清单与嵌入资源进入上下文。
+本仓的 [部署配置](../deployments/docker-compose.yml) 使用完整仓库构建镜像。构建上下文为仓库根目录，镜像定义位于 [build/package/Dockerfile](../build/package/Dockerfile)。[构建忽略规则](../.dockerignore)采用允许列表，包含生产源码、模块清单与嵌入资源。
 
-PowerShell 可先设置环境变量，再运行同一条 Compose 命令。也可通过 `docker compose --env-file .env -f deployments/docker-compose.yml up -d --build` 读取本地环境文件；不要提交含令牌或数据库凭据的文件。
+PowerShell 可先设置环境变量，再运行同一条 Compose 命令。也可通过 `docker compose --env-file .env -f deployments/docker-compose.yml up -d --build` 读取本地环境文件；含令牌或数据库凭据的文件请留在本地。
 
 GemRelay 默认使用独立的 `gemrelay-data` 卷；请在更换部署前自行备份。当前 healthcheck 只确认二进制能运行；HTTP 就绪检查请请求 `GET /`。
-
-也可从仓库根目录直接构建镜像：`docker build -f build/package/Dockerfile -t gemrelay .`。
 
 旧版本启动输出示例（版本、模型和状态以当前运行结果为准）：
 
@@ -90,7 +88,7 @@ gemini-web2api-go v4.0.0
 
 ## 配置
 
-配置只有两个地方，按"改了要不要重启"分：
+配置分为运行时配置和部署期配置，凭证在管理面板中维护。
 
 ### 运行时配置 → 管理面板「设置」页
 
@@ -100,20 +98,20 @@ gemini-web2api-go v4.0.0
 |---|---|
 | 默认模型 | 客户端没传 `model` 时用哪个 |
 | 每 slot 并发 / RPM / RPH | 限流额度，0 = 不限 |
-| Prompt 字节上限 | 超了：挂 cookie 时转成文本附件发（可用长度到约 16 万字节），没挂时返回 400 `context_length_exceeded`。都不静默截断。按 UTF-8 字节算（上游的墙跟 token 无关），默认 128000。0 = 不限 |
-| 多轮（`multi_turn`） | 默认关。开启后走 Gemini 原生 conversation_id 服务端续接——客户端每轮重发全历史，服务端识别续接后只发最新一句、历史留服务端，长会话不再撞单请求字节墙。登录/匿名都可用。**注意**：不放大模型上下文窗口，超窗的早期内容仍会被挤出，解决的是"长对话不撞墙 + 保住最近上下文"，不是"喂超长文档"。 |
-| 自动删会话（`auto_delete_conversation`） | 默认关。登录态单轮请求成功后异步尝试删除网页会话，删除失败不影响响应；服务端多轮路径不执行自动删除 |
-| 临时对话（`temporary_chat`） | 默认关。开启后走 Gemini 网页端原生「临时对话」：会话压根不进账号的会话列表、不用于模型训练，比「自动删会话」更干净，还省掉那次删除请求。只登录态有意义；开了「服务端多轮续接」时自动不生效（临时对话不留列表，多轮要靠服务端留会话）。 |
-| 匿名优先（`anon_first`） | 默认关。开启后，模型不要求登录且没有附件的请求可以匿名执行；工具定义本身不强制登录。登录模型、思考档、媒体工具和附件仍需要账号 |
+| Prompt 字节上限 | 按 UTF-8 字节计算，默认 128000，0 = 关闭本地检查。超限时，登录请求转成文本附件发送（可用长度约 16 万字节），匿名请求返回 400 `context_length_exceeded`；原文保持完整 |
+| 多轮（`multi_turn`） | 默认关。通过 Gemini 原生 conversation_id 续接：客户端每轮发送全历史，服务端识别续接后只向上游发送最新消息，历史保留在上游。登录态和匿名态均可用，可减少单次请求字节数；模型上下文窗口保持原有大小，超窗的早期内容仍会被挤出，超长文档仍受输入长度限制 |
+| 自动删会话（`auto_delete_conversation`） | 默认关。仅用于登录态单轮请求，成功后异步尝试删除网页会话；删除失败时保留已生成的响应 |
+| 临时对话（`temporary_chat`） | 默认关。使用网页端原生「临时对话」，会话留在临时模式，排除在账号会话列表与模型训练之外，省去后续删除请求。仅登录态单轮生效；多轮续接使用持久会话 |
+| 匿名优先（`anon_first`） | 默认关。允许匿名的模型在请求仅含文本时优先匿名执行，附带工具定义也适用；登录模型、思考档、媒体工具和附件使用账号 |
 | 重试次数 / 重试间隔 / 上游超时 | |
-| 严格模型校验（`strict_model`） | 默认关。开启后，响应帧中自报的模型与请求不符时明确失败：未开流返回 `429 insufficient_quota`、`code: model_downgraded`；Chat 已开流发送同分类错误后结束，Responses 发送 `response.failed`，不再发送成功终态。保留实时流式，报错前可能已经发出部分正文，无法撤回。没有自报模型、未知模型或媒体工具不参与判断。别名和思考档共用基础模型判据，不保证识别思考级别被降低。不会自动换号重试；不匹配也可能是账号尚未开放该模型，不一定是额度耗尽。 |
+| 严格模型校验（`strict_model`） | 默认关。确认响应帧自报的模型与请求不符时结束请求：未开流返回 `429 insufficient_quota`、`code: model_downgraded`；Chat 已开流发送同分类错误，Responses 发送 `response.failed`，均以失败结束。实时输出照常转发，客户端可能已收到部分正文。校验覆盖有模型证据的已知文本模型，别名和思考档按基础模型判断，思考级别本身在校验范围之外。其余情况放行。模型不匹配直接报错，换号重试由调用方决定；原因可能是额度耗尽或账号尚未开放该模型 |
 | 明细保留天数 | 过期只删明细，聚合数据永久保留 |
 | TLS 指纹 | `chrome_146`（默认）/ `chrome_144` / `chrome_133` / `firefox_147` / `safari_16_0` / `safari_ios_17_0` |
 | Gemini `bl` 版本 | 上游前端版本号，过期时改这里 |
 | 打印请求日志 | |
 
-所有值都在后端做范围校验（比如 `retry_attempts` 只接受 1-10、超时 5-600 秒），
-非法值会被拒绝并说明原因——浏览器端的限制随手就能绕过，真正的关卡在服务端。
+后端校验所有配置值的范围，例如 `retry_attempts` 为 1–10、超时为 5–600 秒，
+超出范围时返回原因。
 
 ### 凭证 → 也在面板
 
@@ -122,11 +120,11 @@ gemini-web2api-go v4.0.0
 | API Key | 首次启动自动生成，面板里可轮换或自定义 |
 | Google Cookie | 在「Cookie 池」导入。有启用账号时列出登录模型；实际权限与额度仍由上游账号决定 |
 
-两者都存在数据库里。已鉴权的「设置」页可以查看和复制 API Key；Cookie 列表只返回脱敏摘要，不回传已保存的完整 Cookie。
+两者均保存在数据库中。已鉴权的「设置」页可以查看和复制 API Key；Cookie 列表仅返回脱敏摘要。
 
 ### 部署期配置 → [部署配置](../deployments/docker-compose.yml)
 
-只剩改了必须重启进程的：
+以下项目在修改后重启进程生效：
 
 | 项 | 位置 |
 |---|---|
@@ -134,15 +132,15 @@ gemini-web2api-go v4.0.0
 | 数据库路径 | `volumes` + `command: --db` |
 | `ADMIN_TOKEN` | `environment`，面板登录 token |
 
-`API_KEY` 环境变量会锁死 API key（面板改不了），用于不希望运行时被改的部署。
+`API_KEY` 环境变量将 API Key 固定为部署值，面板显示为只读。
 
-`--proxy` 和 `--cookie-file` 是**播种参数**，不是第二套配置：启动时把值导入代理池 /
-Cookie 池（按 URL、cookie 内容去重），之后一律从面板管理。改了重启即生效。
+`--proxy` 和 `--cookie-file` 用于启动导入：将值写入代理池 /
+Cookie 池，分别按 URL 和 Cookie 内容去重，后续从面板管理。修改参数后重启即可导入新值。
 
 命令行参数仍然可用，定位是本地调试时的临时覆盖。优先级：
 **面板改动 > CLI flag / `config.json` > 内置默认**。
 
-不用 Docker 直接跑二进制时，可以把 [`configs/config.example.json`](../configs/config.example.json) 复制成 `config.json` 当启动模板
+直接运行二进制时，可以把 [`configs/config.example.json`](../configs/config.example.json) 复制成 `config.json` 当启动模板
 （配置读取范围为显式路径和工作目录的 `config.json`；缺失时使用内置默认值）。里面的调优项面板改了就以面板为准，
 `config.json` 只决定第一次启动的初值。
 
@@ -153,8 +151,8 @@ Cookie 池（按 URL、cookie 内容去重），之后一律从面板管理。�
 | `--port` | 监听端口，默认 8083 |
 | `--config` | 指定 `config.json` 路径 |
 | `--db` | SQLite 路径，默认 `./data/gemrelay.db` |
-| `--admin-token` | 面板登录 token，留空 = 面板不鉴权（只有绑 127.0.0.1 才可接受） |
-| `--api-key` | 锁定 `/v1/*` 的 key（面板改不了），等价于 `API_KEY` 环境变量 |
+| `--admin-token` | 面板登录 token；留空会关闭面板鉴权，仅限绑定 127.0.0.1 的本机部署使用 |
+| `--api-key` | 将 `/v1/*` 的 key 固定为部署值，面板只读，等价于 `API_KEY` 环境变量 |
 | `--cookie-file` | 启动时把文件里的 cookie 导入 Cookie 池 |
 | `--proxy` | 启动时把这个代理导入代理池 |
 | `--impersonate` | TLS 指纹档位 |

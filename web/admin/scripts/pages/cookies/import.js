@@ -1,6 +1,6 @@
-// 逐项模式列出的 cookie。顺序按"从 DevTools 里找的难易"排，不是字母序。
-// req 只标 SAPISID：后端也只强制这一项（要用它算 SAPISIDHASH 授权头），
-// 其余缺了不一定不能用，标成必填会把能用的号挡在外面。
+// 逐项模式列出的 cookie。顺序按从 DevTools 中查找的难易排列。
+// req 只标 SAPISID：后端仅强制这一项（用于计算 SAPISIDHASH 授权头），
+// 其余项缺失时账号仍可能可用，统一标为必填会阻挡可用账号。
 const COOKIE_KEYS = [
   { k: '__Secure-1PSID', hint: '主会话' },
   { k: 'SAPISID', req: true, hint: '算授权头用，缺了会被当匿名' },
@@ -56,19 +56,19 @@ async function addCookieAcct() {
             </div>`).join('')}
         </div>
         <div class="ck-extra" data-role="extras"></div>
-        <div class="ck-extra">前三项是同类项目实践里的最小可用集合，下面四项补齐更稳。
-        抓包实测浏览器每次实际会发 <b>20 多个</b> cookie，而我们把整串原样转发
-        （代码里只解析 SAPISID 用来算授权头），所以
-        <b>整串粘贴比逐项填更接近真实浏览器</b>；逐项模式适合手头只有零散几项时用。</div>
+        <div class="ck-extra">前三项构成最小可用集合，下面四项用于补齐。
+        浏览器请求实际会携带 <b>20 多个</b> cookie，服务端将整串原样转发
+        （仅解析 SAPISID 用于计算授权头），
+        <b>整串粘贴更接近真实浏览器</b>；逐项模式适合手头只有部分条目的情况。</div>
       </div>
 
       <div data-pane="raw">
         <div class="field">
           <textarea data-name="cookie" rows="6" spellcheck="false"
             placeholder="SID=...; HSID=...; SSID=...; APISID=...; SAPISID=...; __Secure-1PSID=...; __Secure-1PSIDTS=..."></textarea>
-          <div class="hint">整行粘贴，分号分隔。至少要含 SAPISID 和 __Secure-1PSID。
-          建议用 Firefox 导出（Chrome 新版本的会话绑在设备上，续不了）。DevTools 里全选复制即可，
-          多余的项会一并保留 —— 发得越全越像真实浏览器。</div>
+          <div class="hint">整行粘贴，分号分隔，至少包含 SAPISID 和 __Secure-1PSID。
+          建议从 Firefox 导出：其会话可通过服务保活续期，新版 Chrome 的会话绑定设备，续期可能失败。
+          DevTools 中全选复制即可，多余的项会一并保留。</div>
         </div>
       </div>
 
@@ -133,7 +133,7 @@ async function addCookieAcct() {
         cookie = joinCookieObj(obj);
       }
       if (!cookie) return { error: 'Cookie 不能为空' };
-      if (!cookie.includes('SAPISID')) return { error: 'cookie 里没有 SAPISID，多半没复制全' };
+      if (!cookie.includes('SAPISID')) return { error: 'Cookie 缺少 SAPISID，请检查是否复制完整' };
       return { label, cookie, note };
     },
   });

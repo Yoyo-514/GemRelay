@@ -3,14 +3,14 @@ const ERR_BADGE = {
   blocked_sorry: 'fail', upstream_429: 'fail', upstream_http_error: 'fail', network: 'fail',
 };
 const ERR_DESC = {
-  upstream_rejected: '上游返回 200 但没有内容帧。实测是瞬时拒绝，隔几分钟自愈，跟频率/并发/累积次数都无关 —— 重试即可，不用调限流。',
-  rate_limited_local: '本地限流挡下的（slot 满）。要更高产能就在「代理池」加代理。',
-  blocked_sorry: '被 Google 重定向到 sorry/index，当前出口受限。可更换出口或等待恢复；历史测试约 106-121 分钟恢复，不保证每次相同。',
-  model_downgraded: '严格模型校验发现上游实际模型与请求不符。检查账号额度和模型权限。',
-  upstream_429: '上游直接 429。同样是出口 IP 嫌疑，换代理。',
-  upstream_http_error: '上游返回非 200 的其它状态码，可能是协议变更或临时故障。',
-  network: '连不上代理 / DNS / TLS 握手失败。检查代理可用性 —— 实测代理服务商出口质量参差，劣质出口会连续失败。',
-  bad_request: '客户端请求本身有问题（模型名不存在、传了不支持的字段）。',
+  upstream_rejected: '上游返回 200 但没有内容帧，属于瞬时拒绝，通常几分钟内自愈；重试即可。',
+  rate_limited_local: '请求被本地限流挡下（slot 已满）。在「代理池」添加代理可扩大容量。',
+  blocked_sorry: '出口被重定向到 sorry/index。更换出口或等待恢复；历史测试约 106-121 分钟恢复，实际时间随出口变化。',
+  model_downgraded: '严格模型校验发现上游实际模型与请求不符。检查账号额度与模型权限。',
+  upstream_429: '上游返回 429，通常与出口 IP 有关，可更换代理。',
+  upstream_http_error: '上游返回非 200 状态码，可能来自协议变更或临时故障。',
+  network: '代理、DNS 或 TLS 握手失败。检查代理可用性；出口质量不稳定的代理会连续失败。',
+  bad_request: '客户端请求有问题，例如模型名不存在或传入不支持的字段。',
 };
 
 

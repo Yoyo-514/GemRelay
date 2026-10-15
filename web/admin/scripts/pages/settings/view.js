@@ -6,7 +6,7 @@ function renderSettingsPage(k) {
           <h2>运行时配置</h2>
           <p class="lede">
             保存后更新运行时配置，优先级高于 <code>config.json</code> 和命令行参数。
-            上游超时会缓存在网络客户端中，修改后请重启服务以更新已有连接客户端。
+            已有网络客户端保留创建时的超时；修改超时后重启服务可应用到全部出口。
           </p>
           <div id="rtCfgForm"></div>
           <div class="cfg-actions">
@@ -21,8 +21,8 @@ function renderSettingsPage(k) {
             <h2>API Key</h2>
             <p class="lede">
               ${k.locked
-                ? '已被 <code>--api-key</code> / <code>API_KEY</code> 锁定，改部署配置才能换。'
-                : '给 <code>/v1/*</code> 和 <code>/mcp</code> 接口鉴权，可随时轮换。'}
+                ? '由 <code>--api-key</code> / <code>API_KEY</code> 固定为部署值，面板中只读。'
+                : '用于 <code>/v1/*</code> 和 <code>/mcp</code> 接口鉴权，可随时轮换。'}
             </p>
             <div class="row" style="margin-bottom:10px;">
               <input id="apiKeyView" type="password" value="${escapeHtml(k.key)}"
@@ -50,14 +50,14 @@ function renderSettingsPage(k) {
           <div class="card">
             <h2>部署配置</h2>
             <p class="lede">
-              监听、数据库和管理员令牌在部署时设置，可通过启动参数或 Compose 环境变量管理。
-              Google Cookie 在「Cookie 池」导入；API Key 在上方管理。
+              监听、数据库和管理员令牌在部署时设置，通过启动参数或 Compose 环境变量管理。
+              Google Cookie 在「Cookie 池」导入，API Key 在上方管理。
             </p>
             <table id="deployTable" class="kv">
               <tbody></tbody>
             </table>
             <p class="lede" style="margin:14px 0 0;">
-              GemRelay · 单二进制 · token 数为本地估算
+              GemRelay · 单二进制 · token 数按本地估算
             </p>
           </div>
         </div>

@@ -10,22 +10,22 @@
 
 中文 | [English](docs/en/README.md)
 
-项目代理 Gemini 网页协议，不需要 Google API Key。匿名可用两个文本模型；其他模型和媒体能力取决于 Google 账号权限与网页端额度。
+项目通过 Gemini 网页协议访问模型，支持匿名请求和 Google 账号 Cookie 鉴权。匿名可用两个文本模型；其他模型和媒体能力取决于账号权限与网页端额度。
 
 ## 功能
 
 **接口**
 - OpenAI 兼容：`/v1/chat/completions`、`/v1/models`、`/v1/responses`
 - `/v1/videos`：OpenAI(Sora) 形状的异步视频生成——`POST` 建任务、`GET /v1/videos/{id}` 轮询、`GET /v1/videos/{id}/content` 下 MP4（要登录态 Pro 号）
-- 普通对话真流式：上游每出一帧就转发增量
+- 普通对话按上游响应帧转发增量内容
 - Bearer token / `x-api-key` 鉴权，key 可在面板轮换
-- `usage` 用 tiktoken 算，`reasoning_tokens` 单列不计入 `completion_tokens`
+- `usage` 用 tiktoken 估算，`reasoning_tokens` 与 `completion_tokens` 分开统计
 
 **模型**
 - `gemini-3.6-flash`、`gemini-3.5-flash-lite` 匿名可用，含联网搜索
 - `gemini-3.1-pro` 需登录账号有相应权限；上游提供时返回思考链（`reasoning_content`）
 - 文本模型提供扩展思考档位，挂 cookie 后可用
-- 响应里记录服务端**实际**用了哪个模型，被静默降级一眼可见
+- 记录上游回报的实际模型，便于检查模型降级
 
 **账号与出口**
 - 直连使用可配置的浏览器 TLS 指纹，默认 Chrome 146；代理连接使用 Go 标准库客户端
@@ -37,7 +37,7 @@
 - 单二进制，交叉编译 6 平台；容器镜像基于 distroless
 - SQLite 持久化：30 天请求明细 + 永久聚合统计（可选 MySQL / PostgreSQL，设 `SQL_DSN` 即可）
 - 中文管理面板：概览 / 请求记录 / 代理池 / Cookie 池 / 设置，可在面板调整配置，超时更新已有客户端需重启
-- **prompt 和回复内容永不入库**，只存元数据（长度、耗时、模型、状态）
+- 请求记录仅保存长度、耗时、模型、状态等元数据
 
 ## 快速开始
 
@@ -64,7 +64,7 @@ curl http://localhost:8083/v1/chat/completions \
 
 客户端 Base URL 填 `http://localhost:8083/v1`，API Key 使用面板中的值，模型可先选 `gemini-3.6-flash`。
 
-Docker、数据库和配置项见[部署与配置](docs/deployment.md)。Compose 默认构建本仓源码；预编译二进制与远程镜像链接指向原项目，不保证包含本仓新增功能。
+Docker、数据库和配置项见[部署与配置](docs/deployment.md)。Compose 默认构建本仓源码。
 
 ## 文档
 
@@ -78,11 +78,11 @@ Docker、数据库和配置项见[部署与配置](docs/deployment.md)。Compose
 
 ## 使用前注意
 
-- 本项目依赖逆向的网页协议，上游改动可能影响可用性，不等同于 Google 官方 API。
+- 本项目使用逆向的网页协议，与 Google 官方 API 是两套接口；上游改动可能影响可用性。
 - Function calling 采用提示词约定；部分 OpenAI 参数没有对应能力，详见[协议覆盖](docs/api.md#protocol)。
-- 严格模型校验默认关闭。开启后会把已确认的模型不匹配作为错误；实时流式已发出的内容无法撤回。
-- 账号权限、上下文长度与出口限流仍受网页端限制；敏感操作不要仅依赖模型的成功描述。
-- 服务只存请求元数据，不把 prompt 和回复正文写入数据库。部署时请设置管理员令牌并限制访问范围。
+- 严格模型校验默认关闭。开启后会把已确认的模型不匹配作为错误；流式响应中，客户端可能已经收到部分内容。
+- 账号权限、上下文长度与出口限流受网页端限制；敏感操作请核验实际执行结果。
+- 部署时请设置管理员令牌并限制访问范围。
 
 ## 致谢
 

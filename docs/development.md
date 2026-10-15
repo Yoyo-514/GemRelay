@@ -31,7 +31,7 @@
 
 在仓库根目录执行验证：
 
-Windows 若需要带扩展名的可执行文件，可使用 `go build -o gemrelay.exe ./cmd/gemrelay`；下方的全包构建检查不会在根目录留下可执行文件。
+Windows 可使用 `go build -o gemrelay.exe ./cmd/gemrelay` 生成可执行文件。下方的全包构建命令仅检查编译结果。
 
 ```bash
 go build ./...
@@ -39,27 +39,25 @@ go test ./... -count=1
 go vet ./...
 ```
 
-测试按包独立使用临时 SQLite，不继承生产数据库连接串；真实上游上传探针仅在显式设置探针环境变量后运行。包职责、依赖约束和迁移说明见 [架构说明](architecture.md)。
-
-GemRelay 按独立项目部署，默认使用自己的配置目录、数据库文件和数据卷。
+测试按包独立使用临时 SQLite，并清除生产数据库连接串的环境覆盖；真实上游上传探针在显式设置探针环境变量后运行。包职责、依赖约束和迁移说明见 [架构说明](architecture.md)。
 
 ## 持续集成
 
 PR 执行 Go 格式检查、`go vet`、测试和构建。镜像及二进制发布复用同一份检查，版本标签还需与代码版本一致。
-主分支推送继续发布镜像；版本标签继续发布镜像和 Release。在非版本标签引用上手动触发 Release 工作流时，构建产物作为 Actions artifact 保留 7 天，不创建正式 Release。
+主分支推送发布镜像；版本标签发布镜像和 Release。其他引用上手动触发 Release 工作流时，构建产物以 Actions artifact 形式保留 7 天。
 
 ## Windows 上使用 WSLC 验证容器
 
-本机安装 WSLC 时，可以直接构建镜像，不必依赖普通 WSL 发行版：
+WSLC 使用独立的容器运行环境，安装后可直接构建和运行镜像：
 
 ```powershell
 wslc build --progress plain -f "build/package/Dockerfile" -t "gemrelay:local" "."
 wslc run --rm --publish "127.0.0.1:18083:8083" --env "ADMIN_TOKEN=local-verification-only" "gemrelay:local"
 ```
 
-该命令不挂载现有数据卷，仅使用测试容器自身的数据库。服务就绪后检查 `http://127.0.0.1:18083/` 与管理页面；结束容器后，`--rm` 会移除临时容器数据。
+该命令使用测试容器自身的数据库，与现有数据卷隔离。服务就绪后检查 `http://127.0.0.1:18083/` 与管理页面；结束容器后，`--rm` 会移除临时容器数据。
 
-镜像构建与独立容器验证不能替代 Compose 编排验证。检查 Compose 的环境变量展开、项目名和具名卷行为时，仍需运行 Docker Compose v2。
+WSLC 可验证镜像构建和独立容器运行；Compose 的环境变量展开、项目名和具名卷行为需通过 Docker Compose v2 验证。
 
 ---
 

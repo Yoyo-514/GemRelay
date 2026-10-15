@@ -6,7 +6,7 @@ Run commands from the repository root.
 
 ## What this is
 
-It turns a call like this:
+Requests follow this path:
 ```
 [OpenAI SDK / Cherry Studio / Cursor / dify / newapi / ...]
     ↓ http://localhost:8083/v1/chat/completions
@@ -15,7 +15,7 @@ It turns a call like this:
 [Google Gemini web app]
 ```
 
-The service proxies the browser protocol, not Google's official API ([generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)). It needs no Google API key or official API billing quota; web-app account access and usage limits still apply.
+The service uses Gemini's web protocol, independently of Google's official API ([generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)). Requests use anonymous access or account cookies, with web-app quota rules.
 
 ## Request examples
 
@@ -68,7 +68,7 @@ Every OpenAI-compatible client (Cherry Studio / ChatBox / Open WebUI / dify / Cu
 
 **Codex CLI** uses `/v1/responses`; set its base URL to `http://localhost:8083/v1`. Text streams incrementally. Tool calls are returned after complete parsing; see [protocol coverage](#protocol).
 
-**Gemini CLI cannot connect.** It expects Google's native `/v1beta/models/{model}:generateContent`; this project only exposes OpenAI-shaped endpoints and does not implement `/v1beta`.
+**Gemini CLI** expects Google's native `/v1beta/models/{model}:generateContent` format. That differs from this service's OpenAI-compatible API, so Gemini CLI is currently unsupported.
 
 There is also an unauthenticated health check at `GET /` returning `{"status":"ok","version":…,"models":[…]}`.
 
@@ -76,14 +76,12 @@ There is also an unauthenticated health check at `GET /` returning `{"status":"o
 
 ## MCP (web_search tool)
 
-Besides the OpenAI API, the same process and port also serves an **MCP server** at `/mcp`,
-exposing Gemini's web-grounded **search** as a `web_search` tool. This lets MCP clients
-(Claude Desktop / Claude Code / Cursor) "search the web through Gemini" and get a
-**synthesized answer plus source links** back.
+The same process and port serve an MCP server at `/mcp`, exposing Gemini's web search as
+the `web_search` tool. MCP clients such as Claude Desktop, Claude Code and Cursor receive
+a synthesized answer and source links.
 
-No separate process or deployment — running the backend gives you this. The transport is
-HTTP (Streamable HTTP), so remote clients just point at the URL, reusing the backend's
-account pool / proxy pool / rate limiting. Search works anonymously; no cookie required.
+MCP starts with the backend, uses Streamable HTTP, shares the account pool, proxy pool and
+rate limits, and supports anonymous search.
 
 **Client config** (Claude Desktop's `claude_desktop_config.json`):
 
@@ -116,8 +114,8 @@ Model parameters follow the web catalog (`batchexecute?rpcids=otAQ7b`). Register
 |---|---|
 | `gemini-3.6-flash` | All-round, default |
 | `gemini-3.5-flash-lite` | Fast and lightweight |
-| `gemini-3.1-pro` | Most capable, **needs a cookie**; every reply carries a reasoning chain |
-| `gemini-3.8-flash` | Newer Flash, **needs a cookie from a PAID Gemini account** (free accounts get downgraded to 3.5 Flash-Lite). `gemini-3.7-flash` is an alias — Google bumped that same hex from 3.7 to 3.8 in place |
+| `gemini-3.1-pro` | Pro model, requires a cookie; every reply in tests included reasoning |
+| `gemini-3.8-flash` | Requires a paid Gemini account cookie; free accounts are downgraded to 3.5 Flash-Lite. `gemini-3.7-flash` is an alias sharing the hex identifier that upstream upgraded to 3.8 |
 | `gemini-4-argon` | Argon, low thinking by default; requires a signed-in account with access |
 | `gemini-4-argon-low` / `gemini-4-argon-medium` / `gemini-4-argon-high` | Low / medium / high tiers sharing one model identifier; account access required |
 | `gemini-3.6-flash-thinking` | 3.6 Flash with extended thinking; **needs a cookie** |
@@ -129,13 +127,13 @@ Model parameters follow the web catalog (`batchexecute?rpcids=otAQ7b`). Register
 | `gemini-canvas` | Canvas: generates an interactive HTML document (returned inline as a ```html block); **needs a cookie** |
 | `gemini-video` | Video generation (async, tens of seconds to a few minutes); base64 MP4 output; **needs a Pro/paid account** (free accounts are refused by the upstream content policy) |
 
-Without a cookie, `/v1/models` returns only the first two, and asking for `gemini-3.1-pro` fails with an explanation. An anonymous request for it is always silently downgraded to 3.5 Flash-Lite — better to fail at model selection than to hand back a reply that "succeeded" but isn't Pro.
+For anonymous requests, `/v1/models` returns the first two models, and `gemini-3.1-pro` fails at model selection. This catches the case where upstream would downgrade an anonymous Pro request to 3.5 Flash-Lite.
 
-The upstream project recorded six consecutive calls reporting `3.1 Pro` with a valid cookie. Access and quota can change. Inspect the actual model in request details or enable strict model checks.
+Tests recorded six consecutive calls reporting `3.1 Pro` with a valid cookie. Access and quota can change. Inspect the actual model in request details or enable strict model checks.
 
-Only registered models and aliases are exposed. The old names `gemini-3.5-flash`, `gemini-3.5-flash-thinking`, `gemini-3.5-flash-thinking-lite`, `gemini-auto` and `gemini-flash-lite` were **removed** (they now return 400): the backend has no entries for them, and keeping them only suggested there were five distinct models to choose from.
+The API accepts registered models and aliases. The old names `gemini-3.5-flash`, `gemini-3.5-flash-thinking`, `gemini-3.5-flash-thinking-lite`, `gemini-auto` and `gemini-flash-lite` were removed with their upstream entries; requests using them return 400.
 
-> **`@think=N` is deprecated.** Captures identify `inner[17]` as the conversation turn index, not thinking depth. Single-turn requests write 0; server-side continuation increments it. The suffix is accepted and ignored. Use the registered thinking variants or Argon tiers instead.
+> `@think=N` is deprecated and is accepted but ignored. Captures identify `inner[17]` as the conversation turn index: single-turn requests write 0, and server-side continuation increments it. Use registered thinking variants or Argon tiers to set thinking depth.
 
 <a id="reasoning"></a>
 
@@ -154,22 +152,18 @@ Non-streaming:
  "usage":{"prompt_tokens":26,"completion_tokens":337,"reasoning_tokens":77,"total_tokens":363}}
 ```
 
-Streaming sends it as `delta.reasoning_content`, and **the whole reasoning chain is
-streamed before any answer text** — that is the order the upstream itself uses, so the
-experience matches the Gemini web UI.
+Streaming sends reasoning as `delta.reasoning_content`, followed by answer text, matching
+the upstream web app's order.
 
-`reasoning_tokens` is counted **separately and is not included in `completion_tokens`**:
-clients collapse the reasoning by default, so billing it would charge users for output
-they never see (newapi bills on `completion_tokens`). Add the two together yourself if
-you do want to bill for it.
+`reasoning_tokens` and `completion_tokens` are counted separately. Clients usually collapse
+reasoning, and downstream services such as newapi bill on `completion_tokens`. Add the two
+counts if reasoning should be included in billing.
 
 ### Known capability boundaries
 
-Anonymous calls (no cookie) only reach the two text models above plus Gemini's built-in web search. `gemini-3.1-pro` is silently downgraded to 3.5 Flash-Lite anonymously, which is why it isn't exposed at all in that case.
+Signed-in requests can use `gemini-3.1-pro`, **extended-thinking variants and Argon when the account has access**, **image / video input**, **a longer context** (over-long conversations are sent as a text attachment, see below), and **image generation (`gemini-image`), music (`gemini-music`), canvas (`gemini-canvas`), video generation (`gemini-video`, needs a Pro account)**.
 
-Attaching a cookie additionally unlocks `gemini-3.1-pro`, **extended-thinking variants and Argon when the account has access**, **image / video input**, **a longer context** (over-long conversations are sent as a text attachment, see below), and **image generation (`gemini-image`), music (`gemini-music`), canvas (`gemini-canvas`), video generation (`gemini-video`, needs a Pro account)**.
-
-Deep research is still **not implemented** (a multi-step async flow). The panel's "actual model" column always shows which model the backend really used, so any downgrade is visible.
+Deep research's multi-step async flow is currently unimplemented. The panel's "actual model" column shows the model reported by upstream to help identify downgrades.
 
 ### Image & music
 
@@ -181,11 +175,11 @@ curl http://127.0.0.1:8083/v1/chat/completions \
   -d '{"model":"gemini-image","messages":[{"role":"user","content":"an orange cat in an astronaut helmet"}]}'
 ```
 
-Not returning a URL is deliberate — Gemini's artifact links need the cookie to download, so a bare link would be dead on the client side; the server fetches the bytes and inlines them. The base64 is **not counted in `completion_tokens`** (a single image is millions of tokens; billing that downstream would be absurd), only the caption text is. Both need a cookie, so they don't appear in `/v1/models` without one. `size` has no upstream control and is ignored; `n > 1` returns 400.
+Gemini artifact links require cookies, so the server downloads the bytes and returns them as base64. `completion_tokens` counts caption text only, excluding image and audio data. Both models require a signed-in session and appear in the signed-in model list. `size` is accepted and ignored; `n > 1` returns 400.
 
-The default single-turn path flattens `messages` into one prompt. Enabling `multi_turn` allows the server to reuse a Gemini conversation and send only the newest message on a matching continuation. A new conversation or the attachment path still sends full history. The upstream request-body limit was measured at about **130,000 UTF-8 bytes**; without local checks, the upstream can truncate from the tail, where the latest message sits.
+The default single-turn path flattens `messages` into one prompt. Enabling `multi_turn` allows the server to reuse a Gemini conversation and send only the newest message on a matching continuation. A new conversation or the attachment path still sends full history and remains subject to the request-body limit, measured at about **130,000 UTF-8 bytes**. Local checks catch oversized inputs before upstream can truncate the tail containing the latest message.
 
-With a cookie, an over-long conversation is uploaded as a `message.txt` attachment instead, which gets around the request-body wall — **but the attachment has a wall of its own**: the model only ever sees about **160,000 bytes** of content in total; anything past that is uploaded but never read (measured with the total size held fixed and only the marker's offset moved: readable at 157,833, not readable at 163,371; splitting into several attachments does not raise the budget). So a cookie takes the usable length from 130K to about 160K — **a genuinely long conversation still has to be compacted by the client**. Without a cookie the request is rejected with 400 `context_length_exceeded` rather than losing data silently.
+For signed-in requests, over-long conversations are uploaded as a `message.txt` attachment, raising the usable length from about 130,000 to **160,000 bytes**. The attachment limit applies to total model-visible content; uploaded data beyond it may be unreadable. With total size fixed and only the marker offset changed, the marker was readable at 157,833 bytes but not at 163,371. Splitting the content across attachments left the total budget unchanged. Longer conversations need client-side compaction. Oversized anonymous requests return 400 `context_length_exceeded`.
 
 <a id="protocol"></a>
 
@@ -194,19 +188,19 @@ With a cookie, an over-long conversation is uploaded as a `message.txt` attachme
 | Endpoint | Status | Notes |
 |---|---|---|
 | `POST /v1/chat/completions` | Supported | Incremental text and reasoning. With tools, text outside tool-call fences streams; structured tool calls follow complete parsing. Successful streams end with `finish_reason` and `[DONE]`; failures use an error chunk |
-| `POST /v1/responses` | Supported | Incremental text with Responses event ordering; tool calls follow complete parsing. No reasoning events. Failures end with `response.failed`, not `response.completed` |
-| `GET /v1/models` | Supported | Two text models anonymously; an enabled account exposes registered signed-in models. Listing a model does not prove that the account has upstream access |
+| `POST /v1/responses` | Supported | Incremental text with Responses event ordering; reasoning events are currently unavailable. Tool calls follow complete parsing. Success ends with `response.completed`, failure with `response.failed` |
+| `GET /v1/models` | Supported | Two text models anonymously; an enabled account exposes registered signed-in models. Using them still requires the account's upstream access |
 | `POST /v1/videos`, `GET /v1/videos/{id}`, `GET /v1/videos/{id}/content` | Supported | Create a video job, inspect its state and download MP4; account access required |
 | `POST /mcp` | Supported | Streamable HTTP `web_search`, authenticated with the API key |
 | `GET /` | ✅ | Health check, unauthenticated, returns status/version/models |
 | `/v1beta/models/…` (Gemini CLI native) | ❌ | Not implemented, only OpenAI-shaped endpoints are exposed |
 | `/v1/embeddings`, `/v1/images/*`, `/v1/audio/*` | ❌ | Not implemented, return 404 |
-| Function calling | ⚠️ | Prompt-level implementation (the model emits a ` ```tool_call``` ` block that we parse with a regex), not a real protocol layer. **Reliable for looking up private data or internal systems**, but anything Gemini can answer itself (the weather) gets answered directly, and side-effecting actions (sending email) are refused. **Agentic clients (Codex, etc.) now work**: before 4.11.0 their tens-of-KB system prompts buried our tool instructions and caused off-topic replies; fixed now. Since 4.12.0 tool results are condensed into a clear success/failure signal, so weak models no longer misread a no-output success as a failure and loop retrying (measured: the same task dropped from 26 loops to 2-4 before it concludes) |
-| `tool_choice` | ⚠️ | `none` injects no tool definitions at all; `required` and a named function add mandatory wording and drop the other tools from the prompt. A prompt-level layer **cannot truly force it** — in testing, questions the model can answer itself (weather, 2+2) were answered directly even under `required` |
+| Function calling | ⚠️ | Prompts ask the model to emit a ` ```tool_call``` ` block, which is parsed with a regex. Private-data and internal-system lookups are relatively reliable; the model may answer weather questions itself or refuse side-effecting actions such as email. Agent clients including Codex can connect. Release 4.11.0 fixed long system prompts burying tool instructions; 4.12.0 condensed tool results into success/failure signals to reduce retries caused by misreading empty output as failure. One test task dropped from 26 turns to 2–4 |
+| `tool_choice` | ⚠️ | `none` skips tool definitions; `required` strengthens the instruction, and a named function keeps only that tool. Compliance depends on the model following the prompt: weather and 2+2 questions were still answered directly under `required` in tests |
 | `stream_options.include_usage` | ✅ | Emits a usage chunk with an empty `choices` array after `finish_reason` |
 | `usage` token counts | ✅ | tiktoken cl100k_base, the same basis as the panel's requests table |
-| `n` > 1 | ❌ | Returns 400. Upstream yields a single candidate; silently treating it as 1 would short-change the client |
-| Sampling params | ➖ | `temperature` / `top_p` / `max_tokens` / `stop` / `seed` / `presence_penalty` / `frequency_penalty` are **accepted and ignored, not rejected**. Gemini's web protocol has no such knobs |
+| `n` > 1 | ❌ | Returns 400; upstream provides a single candidate |
+| Sampling params | ➖ | `temperature` / `top_p` / `max_tokens` / `stop` / `seed` / `presence_penalty` / `frequency_penalty` are accepted and ignored; the web protocol lacks corresponding controls |
 | `response_format` / `logprobs` | ➖ | Not implemented, accepted and ignored |
 | Vision / image input | ⚠️ | **Works with a cookie**: both `image_url` (chat) and `input_image` (responses) are accepted, from `data:` URLs or http(s) links, up to 12MB per image. Anonymous returns 400 — anonymous upload **does** work (`content-push.googleapis.com/upload/`, two-step resumable), but referencing the uploaded file in a conversation is refused upstream (`BardErrorInfo 1100`) |
 | Audio | ❌ | Sending `input_audio` returns 400. The web app has music generation (Lyria 3), signed-in only |

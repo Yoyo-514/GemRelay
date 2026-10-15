@@ -15,12 +15,12 @@ function renderCookiePool(data) {
           <summary>每行一个 Google 登录态账号</summary>
           <div class="body">
             粘贴 gemini.google.com 下的<b>完整 cookie 串</b>（至少含 SID / HSID / SSID /
-            APISID / SAPISID / __Secure-1PSID / __Secure-1PSIDTS）。请求时按<b>最久未用优先</b>自动轮转挑一个
-            启用的账号；模型权限和媒体生成额度由上游账号决定。<br><br>
-            凭证保存后<b>不再回传浏览器</b>，列表只显示脱敏摘要（cookie 数 / 关键项 /
-            SAPISID 末 4 位 / 失败次数）。缺 <code>__Secure-1PSIDTS</code> 的号会标黄，
-            首次保活会尝试向 Google 补发；若反复失败请用 <b>Firefox</b> 重新导出
-            （Chrome 新版本的设备绑定会话续不了）。
+            APISID / SAPISID / __Secure-1PSID / __Secure-1PSIDTS）。请求时按<b>最久未用优先</b>自动轮转选择
+            启用账号；模型权限和媒体生成额度由上游账号决定。<br><br>
+            凭证保存后仅用于服务端请求，列表显示脱敏摘要（cookie 数 / 关键项 /
+            SAPISID 末 4 位 / 失败次数）。缺 <code>__Secure-1PSIDTS</code> 的账号会标黄，
+            首次保活会尝试向 Google 补发；保活持续失败时，建议用 <b>Firefox</b> 重新导出，
+            其会话可通过服务保活尝试续期。
           </div>
         </details>
         <div class="table-scroll">

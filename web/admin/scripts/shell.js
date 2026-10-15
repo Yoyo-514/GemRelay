@@ -146,7 +146,7 @@ function renderShell() {
   loadSideStat();
 }
 
-// 侧栏底部放真正有用的服务状态，而不是一个占位破折号
+// 侧栏底部展示服务状态
 async function loadSideStat() {
   const box = document.getElementById('sideStat');
   if (!box) return;
