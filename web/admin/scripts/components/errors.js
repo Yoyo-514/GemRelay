@@ -1,11 +1,12 @@
 const ERR_BADGE = {
-  upstream_rejected: 'muted', rate_limited_local: 'muted', bad_request: 'muted',
+  upstream_rejected: 'muted', rate_limited_local: 'muted', bad_request: 'muted', model_downgraded: 'warn',
   blocked_sorry: 'fail', upstream_429: 'fail', upstream_http_error: 'fail', network: 'fail',
 };
 const ERR_DESC = {
   upstream_rejected: '上游返回 200 但没有内容帧。实测是瞬时拒绝，隔几分钟自愈，跟频率/并发/累积次数都无关 —— 重试即可，不用调限流。',
   rate_limited_local: '本地限流挡下的（slot 满）。要更高产能就在「代理池」加代理。',
-  blocked_sorry: '被 Google 重定向到 sorry/index，该出口 IP 进了黑名单。换代理，6-24 小时才恢复。',
+  blocked_sorry: '被 Google 重定向到 sorry/index，当前出口受限。可更换出口或等待恢复；历史测试约 106-121 分钟恢复，不保证每次相同。',
+  model_downgraded: '严格模型校验发现上游实际模型与请求不符。检查账号额度和模型权限。',
   upstream_429: '上游直接 429。同样是出口 IP 嫌疑，换代理。',
   upstream_http_error: '上游返回非 200 的其它状态码，可能是协议变更或临时故障。',
   network: '连不上代理 / DNS / TLS 握手失败。检查代理可用性 —— 实测代理服务商出口质量参差，劣质出口会连续失败。',

@@ -18,6 +18,9 @@ try {
   assertUI(renderQuotaMetric('5 小时', { remain_percent: 0, reset_at: 1792093504 }).includes('fail'), '耗尽需要文本与状态提示');
   assertUI(renderQuotaMetric('每周', { remain_percent: 13, reset_at: 1792093504 }).includes('warn'), '低额度应突出显示');
   const fields = RT_GROUPS.flatMap(group => group.fields);
+  assertUI(fields.find(field => field.k === 'max_prompt_bytes').hint.includes('附件'), '字节上限提示必须说明附件路径');
+  assertUI(fields.find(field => field.k === 'request_timeout_sec').hint.includes('已有客户端'), '超时提示不会立即更新已缓存客户端');
+  assertUI(ERR_DESC.model_downgraded?.includes('模型'), '模型校验失败应有对应统计说明');
   assertUI(new Set(fields.map(field => field.k)).size === fields.length, '设置字段不能重复');
   const form = renderRuntimeConfig({ strict_model: true }, ['gemini-3.6-flash']);
   document.getElementById('app').innerHTML = form;

@@ -566,6 +566,7 @@ func TestAnonFirstEligible(t *testing.T) {
 func TestClassifyError(t *testing.T) {
 	for _, c := range []struct{ in, want string }{
 		{"", ""},
+		{"strict_model：请求 gemini-4-argon，但上游实际使用 3.5 Flash-Lite", "model_downgraded"},
 		{"upstream returned no content frame (raw 381 bytes)", "upstream_rejected"},
 		{"direct IP slot full: rpm limit reached (configure proxies to scale)", "rate_limited_local"},
 		{"all proxy slots full: rph limit reached", "rate_limited_local"},
@@ -576,6 +577,7 @@ func TestClassifyError(t *testing.T) {
 		{"image input not supported: ...", "bad_request"},
 		{"dial tcp 1.2.3.4:10000: connectex: connection refused", "network"},
 		{"remote error: tls: handshake failure", "network"},
+		{"dial tcp: strict_model：connection failed", "network"},
 	} {
 		if got := storage.ClassifyError(c.in); got != c.want {
 			t.Errorf("classifyError(%q) = %q, want %q", c.in, got, c.want)

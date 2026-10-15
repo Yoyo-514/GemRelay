@@ -1,5 +1,7 @@
 # 目录与依赖约束
 
+[首页](../README.md) · [开发与项目结构](development.md) · [API 与模型](api.md) · [账号与代理](operations.md)
+
 本项目使用一个 Go module、一个可执行程序，继续以单二进制部署。顶层目录参考
 [golang-standards/project-layout](https://github.com/golang-standards/project-layout/blob/master/README_zh-CN.md)，
 仅采用实际需要的部分；该布局不是 Go 官方标准。
@@ -125,11 +127,11 @@ docker build -f build/package/Dockerfile -t gemini-web2api-go .
 docker compose -f deployments/docker-compose.yml up -d
 ```
 
-源码 Compose 构建需要取消部署文件中构建配置块的注释。构建上下文仍是仓库根目录，
+Compose 默认构建当前仓库的本地镜像，管理员令牌必须提供。构建上下文是仓库根目录，
 配置中的容器定义路径相对于该上下文；相对绑定挂载路径则相对于部署文件所在目录。
 从新部署文件启动已有部署前，应保留原有 Compose 项目名或显式指定原项目名，
 避免为原数据卷创建另一个项目前缀。不要删除原卷。
 
-独立下载的 Compose 文件仍可直接拉取现成镜像；其源码构建配置需要完整仓库。
+本仓 Compose 需要完整源码，不能只下载该文件运行。构建忽略规则采用允许列表，排除本地配置、凭据和数据库；镜像仅复制生产入口、内部代码和嵌入资源。
 配置模板迁移不会改变默认配置查找位置、数据库默认路径、配置键或环境变量优先级。
 HTTP 路由、响应字段、数据库结构和网络回退策略保持原有约定。

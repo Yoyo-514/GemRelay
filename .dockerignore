@@ -1,0 +1,14 @@
+# 构建上下文只允许模块清单、生产代码、嵌入资源和镜像定义。
+# 本地数据库、Cookie、环境文件、测试输出和 Git 历史默认全部排除。
+**
+!go.mod
+!go.sum
+!cmd/
+!cmd/**
+!internal/
+!internal/**
+!web/
+!web/**
+!build/
+!build/package/
+!build/package/Dockerfile

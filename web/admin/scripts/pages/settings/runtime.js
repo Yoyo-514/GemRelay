@@ -47,7 +47,7 @@ async function loadRtCfg() {
   const d = data.deploy || {};
   document.querySelector('#deployTable tbody').innerHTML = [
     ['监听', `${escapeHtml(d.host || '')}:${d.port}`, 'compose 的 ports + --port'],
-    ['数据库', escapeHtml(d.db_path || ''), 'compose 的 volumes + --db'],
+    ['SQLite 文件', escapeHtml(d.db_path || ''), '仅 SQLite 模式使用；SQL_DSN 可选择 MySQL 或 PostgreSQL，此处不展示连接凭据'],
     ['Cookie 播种文件', d.cookie_file ? escapeHtml(d.cookie_file) : '<span class="badge muted">未配置</span>',
      '启动时把文件内容导入 Cookie 池；之后从「Cookie 池」页面管理'],
     ['面板鉴权', d.admin_auth ? '<span class="badge ok">已开启</span>'

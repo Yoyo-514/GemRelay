@@ -29,6 +29,9 @@ func TestStrictModelViolation(t *testing.T) {
 	if !errors.As(err, &mismatch) {
 		t.Fatalf("没有可分类的模型不匹配错误: %v", err)
 	}
+	if got := storage.ClassifyError(err.Error()); got != "model_downgraded" {
+		t.Fatalf("真实模型校验错误被统计成 %q", got)
+	}
 	for _, want := range []string{"gemini-4-argon-high", "3.5 Flash-Lite", "4 argon"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("错误缺少证据 %q: %v", want, err)

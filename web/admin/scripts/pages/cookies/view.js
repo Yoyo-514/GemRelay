@@ -16,7 +16,7 @@ function renderCookiePool(data) {
           <div class="body">
             粘贴 gemini.google.com 下的<b>完整 cookie 串</b>（至少含 SID / HSID / SSID /
             APISID / SAPISID / __Secure-1PSID / __Secure-1PSIDTS）。请求时按<b>最久未用优先</b>自动轮转挑一个
-            启用的账号，媒体生成有每账号 10/天 的配额，配越多号总容量越大。<br><br>
+            启用的账号；模型权限和媒体生成额度由上游账号决定。<br><br>
             凭证保存后<b>不再回传浏览器</b>，列表只显示脱敏摘要（cookie 数 / 关键项 /
             SAPISID 末 4 位 / 失败次数）。缺 <code>__Secure-1PSIDTS</code> 的号会标黄，
             首次保活会尝试向 Google 补发；若反复失败请用 <b>Firefox</b> 重新导出

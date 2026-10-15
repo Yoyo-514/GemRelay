@@ -4,22 +4,28 @@
 # --platform=$BUILDPLATFORM: builder 永远跑在构建机的原生架构上,靠 GOARCH 交叉
 # 编译出目标架构的二进制。多架构构建时如果让 builder 跟着目标平台走,arm64 那份
 # 会在 QEMU 里模拟编译,Go 编译是 CPU 密集型,慢一个数量级。
-FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine AS builder
+ARG GO_VERSION=1.27.2
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS builder
 
 WORKDIR /src
 
 # Cache deps separately for faster rebuilds
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
-COPY . .
+# 仅复制二进制入口、内部实现和嵌入资源，不包含本机配置、Cookie 或数据库。
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+COPY web/ ./web/
 
 # TARGETARCH 由 buildx 注入(amd64 / arm64 ...)。经典 builder 不注入,兜底 amd64。
 ARG TARGETARCH
 
 # CGO disabled — modernc/sqlite is pure Go.
 # -ldflags strip symbols to shave ~5MB off binary.
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build \
     -ldflags="-s -w" \
     -trimpath \
     -o /out/gemini-web2api ./cmd/gemini-web2api
@@ -46,6 +52,6 @@ USER nonroot:nonroot
 
 EXPOSE 8083
 
-ENV DB_PATH=/data/gemini.db
+# 数据库路径由下面的 --db 设置；程序不读取 DB_PATH 环境变量。
 ENTRYPOINT ["/app/gemini-web2api"]
 CMD ["--db", "/data/gemini.db", "--port", "8083"]

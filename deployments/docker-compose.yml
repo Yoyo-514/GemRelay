@@ -1,20 +1,21 @@
 services:
   gemini-web2api:
-    # 默认拉现成镜像，不需要源码——把这个文件单独下下来就能跑。
-    # 想从源码构建（改了代码、或者要自己审一遍）就把下面 build 配置块的注释去掉。
-    image: ghcr.io/zexadev/gemini-web2api-go:latest
-    # build:
-    #   context: ..
-    #   dockerfile: build/package/Dockerfile
+    # 构建当前仓库版本，不默认拉取原项目镜像。需要 Docker Compose v2。
+    # 从仓库根目录运行：docker compose -f deployments/docker-compose.yml up -d --build
+    image: gemini-web2api-go:local
+    pull_policy: build
+    build:
+      context: ..
+      dockerfile: build/package/Dockerfile
     container_name: gemini-web2api
     restart: unless-stopped
 
     # ── 这里只放"改了必须重启进程"的东西 ──────────────────────────────────
     # 调优参数（限流额度、重试、超时、默认模型、TLS 指纹、bl 版本、降级开关、
-    # 日志开关、保留天数）在管理面板「设置 → 运行时配置」里改，保存即生效。
+    # 日志开关、保留天数）在管理面板「设置 → 运行时配置」里改。
+    # 已有网络客户端会缓存超时，修改超时后重启服务可确保全部出口更新。
     # 凭证（API Key、Google Cookie）也在面板里管，存数据库。
-    # 下面的 API_KEY / cookie 挂载都是**可选的锁定开关**，给不希望运行时被改
-    # 的部署用；不设的话默认走面板。
+    # API_KEY 可锁定接口密钥；cookie 文件只用于启动播种，不锁定后续面板管理。
 
     ports:
       - "127.0.0.1:8083:8083"
@@ -34,11 +35,13 @@ services:
       # - ../cookie.txt:/app/cookie.txt:ro         # 可选：启动时把这个文件导入 Cookie 池
 
     environment:
-      # 面板登录 token。留空 = 面板不鉴权，只有在绑定 127.0.0.1 时才可接受。
-      ADMIN_TOKEN: "${ADMIN_TOKEN:-change-me-in-production}"
-      # 可选：锁定 /v1/* 的 API key，设了之后面板改不了。
+      # 必须通过环境变量或 Compose 的 --env-file 提供，避免使用公开的默认令牌。
+      ADMIN_TOKEN: "${ADMIN_TOKEN:?Set ADMIN_TOKEN before starting the service}"
+      # 可选：锁定 /v1/* 和 /mcp 的 API key，设了之后面板改不了。
       # 不设则首次启动自动生成，在面板里轮换。
       # API_KEY: "sk-gemini-your-key"
+      # 可选：切换数据库；包含凭据，建议通过外部环境文件管理，不提交到仓库。
+      # SQL_DSN: "${SQL_DSN}"
       TZ: "${TZ:-UTC}"
 
     # 镜像自带 CMD ["--db","/data/gemini.db","--port","8083"]，一般不用改。
@@ -46,6 +49,7 @@ services:
     # command: ["--db", "/data/gemini.db", "--port", "8083", "--cookie-file", "/app/cookie.txt"]
 
     healthcheck:
+      # 仅检查二进制能否运行；服务 HTTP 就绪探测应额外请求 GET /。
       test: ["CMD", "/app/gemini-web2api", "--version"]
       interval: 30s
       timeout: 5s
@@ -58,4 +62,5 @@ services:
         max-file: "3"
 
 volumes:
+  # 已有部署继续使用原 Compose 项目名（-p），不要通过 down -v 删除原数据卷。
   gw2a-data:

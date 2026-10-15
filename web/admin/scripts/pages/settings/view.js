@@ -5,8 +5,8 @@ function renderSettingsPage(k) {
          <div class="panel">
           <h2>运行时配置</h2>
           <p class="lede">
-            改完点保存<b>立刻生效</b>，不用重启。存在数据库里，优先级高于
-            <code>config.json</code> 和命令行参数。
+            保存后更新运行时配置，优先级高于 <code>config.json</code> 和命令行参数。
+            上游超时会缓存在网络客户端中，修改后请重启服务以更新已有连接客户端。
           </p>
           <div id="rtCfgForm"></div>
           <div class="cfg-actions">
@@ -22,7 +22,7 @@ function renderSettingsPage(k) {
             <p class="lede">
               ${k.locked
                 ? '已被 <code>--api-key</code> / <code>API_KEY</code> 锁定，改部署配置才能换。'
-                : '给 <code>/v1/*</code> 接口鉴权，可随时轮换。'}
+                : '给 <code>/v1/*</code> 和 <code>/mcp</code> 接口鉴权，可随时轮换。'}
             </p>
             <div class="row" style="margin-bottom:10px;">
               <input id="apiKeyView" type="password" value="${escapeHtml(k.key)}"
@@ -50,14 +50,14 @@ function renderSettingsPage(k) {
           <div class="card">
             <h2>部署配置</h2>
             <p class="lede">
-              改这些本来就要重启进程，所以放在 <code>docker-compose.yml</code> 里管，
-              不做成网页表单——凭证也不该经过浏览器。
+              监听、数据库和管理员令牌在部署时设置，可通过启动参数或 Compose 环境变量管理。
+              Google Cookie 在「Cookie 池」导入；API Key 在上方管理。
             </p>
             <table id="deployTable" class="kv">
               <tbody></tbody>
             </table>
             <p class="lede" style="margin:14px 0 0;">
-              gemini-web2api-go · 单二进制 · SQLite · Chrome 146 指纹 · tiktoken cl100k_base 计费
+              gemini-web2api-go · 单二进制 · token 数为本地估算
             </p>
           </div>
         </div>
