@@ -43,19 +43,41 @@ The service accesses Gemini through its web protocol, using anonymous requests o
 
 ## Quick start
 
-Source builds require Go 1.27.2 or newer. Run from this checkout's root:
+### Docker
+
+On a Linux deployment machine, run the published image, replacing `your-admin-token` with your own admin token:
 
 ```bash
-go build -o gemrelay ./cmd/gemrelay
-./gemrelay --port 8083 --admin-token your-admin-token
+docker run -d --name gemrelay \
+  -p 0.0.0.0:8083:8083 \
+  -v "gemrelay-data:/data" \
+  ghcr.io/yoyo-514/gemrelay:latest \
+  --db "/data/gemrelay.db" --port 8083 --admin-token your-admin-token
 ```
 
-Open `http://localhost:8083/admin`, sign in with the admin token, and find the API key on the Settings page. The default database is `./data/gemrelay.db`; the service generates an API key on first boot.
+The image supports Linux amd64 / arm64 and stores data in the `gemrelay-data` volume. The `latest` tag tracks main-branch builds.
+
+### Binary
+
+Download the executable for your system and architecture from the [latest release](https://github.com/Yoyo-514/GemRelay/releases/latest), then rename it to `gemrelay` (`gemrelay.exe` on Windows). On Linux / macOS, run these commands from the program's directory:
+
+```bash
+chmod +x "./gemrelay"
+"./gemrelay" --port 8083 --admin-token your-admin-token
+```
+
+The binary stores data in `./data/gemrelay.db` relative to its working directory. See [Deployment and configuration](deployment.md) for Windows, macOS and Compose instructions.
+
+### Connect a client
+
+The service listens on `0.0.0.0:8083` by default. Replace `SERVER_IP` below with the server's public or LAN IP, and allow TCP port 8083 in the host firewall and cloud security group.
+
+Open `http://SERVER_IP:8083/admin`, sign in with the admin token, and find the API key generated on first boot on the Settings page.
 
 Make a request:
 
 ```bash
-curl http://localhost:8083/v1/chat/completions \
+curl "http://SERVER_IP:8083/v1/chat/completions" \
   -H "Authorization: Bearer sk-gemrelay-..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -64,9 +86,9 @@ curl http://localhost:8083/v1/chat/completions \
   }'
 ```
 
-Set the client's base URL to `http://localhost:8083/v1`, use the key from the panel, and start with `gemini-3.6-flash`.
+Set the client's base URL to `http://SERVER_IP:8083/v1`, use the key from the panel, and start with `gemini-3.6-flash`.
 
-See [Deployment and configuration](deployment.md) for Docker, databases and settings. Compose builds this checkout by default.
+See [Deployment and configuration](deployment.md) for databases, startup settings and source builds.
 
 ## Documentation
 

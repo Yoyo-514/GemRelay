@@ -2,23 +2,92 @@
 
 [Home](README.md) · [中文](../deployment.md)
 
-Run commands from the repository root.
+Deploy with the published Docker image or a binary. The image examples use the `latest` tag; replace `your-admin-token` with your own admin token.
 
 <a id="quick-start"></a>
 
 ## Quick start
 
-### Prebuilt binary
+### Docker image
 
-Download the single-file executable for your platform from
-[Releases](https://github.com/Yoyo-514/GemRelay/releases) and run it directly:
+The image is available on [GHCR](https://github.com/Yoyo-514/GemRelay/pkgs/container/gemrelay) for Linux amd64 / arm64. Run on a Linux deployment machine:
 
 ```bash
-chmod +x gemrelay_*
-./gemrelay_* --port 8083 --admin-token your-admin-token
+docker pull ghcr.io/yoyo-514/gemrelay:latest
+docker run -d --name gemrelay \
+  -p 0.0.0.0:8083:8083 \
+  -v "gemrelay-data:/data" \
+  ghcr.io/yoyo-514/gemrelay:latest \
+  --db "/data/gemrelay.db" --port 8083 --admin-token your-admin-token
 ```
 
-Data lands in `./data/gemrelay.db` by default; pass `--db /your/path.db` to move it.
+The database is stored at `/data/gemrelay.db` in the container and persisted in the `gemrelay-data` volume. Back up the data before upgrading. The port binds to `0.0.0.0` on the deployment machine for access through its public or LAN IP.
+
+Version tags (`vX.Y.Z`) identify releases. The `main` and `latest` tags track main-branch builds. To pin a release, use its tag from the release page.
+
+### Docker Compose
+
+Docker Compose v2 works on Linux and Windows Docker Desktop. Save this as `compose.yaml` in your deployment directory:
+
+```yaml
+services:
+  gemrelay:
+    image: ghcr.io/yoyo-514/gemrelay:latest
+    container_name: gemrelay
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8083:8083"
+    volumes:
+      - gemrelay-data:/data
+    command: ["--db", "/data/gemrelay.db", "--port", "8083", "--admin-token", "your-admin-token"]
+
+volumes:
+  gemrelay-data:
+```
+
+Run from that directory:
+
+```bash
+docker compose -f "compose.yaml" pull
+docker compose -f "compose.yaml" up -d
+```
+
+### Binary
+
+Download the executable for your system and architecture from the [latest release](https://github.com/Yoyo-514/GemRelay/releases/latest). Release filenames include a version number; choose by the suffix below:
+
+| System | amd64 (x86-64) | arm64 |
+|---|---|---|
+| Linux | `*_linux_amd64` | `*_linux_arm64` |
+| macOS | `*_darwin_amd64` | `*_darwin_arm64` |
+| Windows | `*_windows_amd64.exe` | `*_windows_arm64.exe` |
+
+Rename the downloaded program to `gemrelay` on Linux / macOS, or `gemrelay.exe` on Windows.
+
+On Linux / macOS, grant execute permission and start it from the program's directory:
+
+```bash
+chmod +x "./gemrelay"
+"./gemrelay" --port 8083 --admin-token your-admin-token
+```
+
+On Windows, run from the program's directory in PowerShell:
+
+```powershell
+& "./gemrelay.exe" --port 8083 --admin-token your-admin-token
+```
+
+The binary stores data in `./data/gemrelay.db` relative to its working directory. Use `--db` to choose another path.
+
+### Sign in and connect
+
+The service listens on `0.0.0.0:8083` by default. Replace `SERVER_IP` with the server's public or LAN IP, and allow TCP port 8083 in the host firewall and cloud security group.
+
+Open `http://SERVER_IP:8083/admin` and sign in with the admin token. The service generates an API key on first boot. Startup output shows a masked value; the full key is on the Settings page.
+
+Set the client's base URL to `http://SERVER_IP:8083/v1` and use the key from the panel. Request examples are in [API, models and clients](api.md).
+
+## Database
 
 SQLite is the default database. To use MySQL / PostgreSQL, set `SQL_DSN`:
 
@@ -31,6 +100,17 @@ SQL_DSN="postgres://user:pass@host:5432/dbname?sslmode=disable"
 
 Tables are created automatically; all three backends share one schema. SQLite suits a single instance; MySQL / PostgreSQL can serve multiple instances sharing pool data.
 
+## Build from source
+
+### Go binary
+
+Use Go 1.27.2 or newer and run from the repository root:
+
+```bash
+go build -o gemrelay ./cmd/gemrelay
+./gemrelay --port 8083 --admin-token your-admin-token
+```
+
 ### Local Docker image
 
 Build and run from the repository root:
@@ -38,52 +118,23 @@ Build and run from the repository root:
 ```bash
 docker build -f build/package/Dockerfile -t gemrelay:local .
 docker run -d --name gemrelay \
-  -p 127.0.0.1:8083:8083 \
+  -p 0.0.0.0:8083:8083 \
   -v gemrelay-data:/data \
   -e ADMIN_TOKEN=your-admin-token \
   gemrelay:local
 ```
 
-With Docker Compose v2, run from the checkout's root. The configuration builds `gemrelay:local` and requires an admin token:
+The repository's [Compose configuration](../../deployments/docker-compose.yml) pulls the published image by default. For a local build, set `image` to `gemrelay:local`, set `pull_policy` to `build`, and enable the commented `build` block. The repository root is the build context, using [build/package/Dockerfile](../../build/package/Dockerfile). The [.dockerignore](../../.dockerignore) allowlist includes production sources, module manifests and embedded assets.
+
+After enabling the local build, provide an admin token and start the service in Git Bash or a Linux terminal:
 
 ```bash
 ADMIN_TOKEN=your-admin-token docker compose -f deployments/docker-compose.yml up -d --build
 ```
 
-### From source
+In PowerShell, set `ADMIN_TOKEN` before running Compose's `up -d --build`. Alternatively, use `docker compose --env-file ".env" -f "deployments/docker-compose.yml" up -d --build` to read a local environment file. Keep files containing tokens or database credentials local.
 
-Use Go 1.27.2 or newer and run from this checkout's root:
-
-```bash
-go build -o gemrelay ./cmd/gemrelay
-./gemrelay --port 8083 --admin-token your-admin-token
-```
-
-The [deployment configuration](../../deployments/docker-compose.yml) builds from the full checkout. The repository root is the build context, using [build/package/Dockerfile](../../build/package/Dockerfile). The [.dockerignore](../../.dockerignore) allowlist includes production sources, module manifests and embedded assets.
-
-In PowerShell, set the environment variable before running Compose. Alternatively, use `docker compose --env-file .env -f deployments/docker-compose.yml up -d --build`; keep files containing tokens or database credentials local.
-
-GemRelay stores container data in its own `gemrelay-data` volume; back up your data before changing deployments. The current healthcheck only checks that the binary runs; use `GET /` for HTTP readiness.
-
-Startup banner example from an older release (version and model list vary with the running build):
-
-```
-gemini-web2api-go v4.0.0
-  Listening:   http://0.0.0.0:8083
-  Base URL:    http://localhost:8083/v1
-  API key:     sk-gemini-XX...XXXX  (mutable in admin UI)
-  Admin UI:    http://localhost:8083/admin  (token auth)
-  DB:          ./data/gemini.db
-  Models:      [gemini-3.5-flash-lite gemini-3.6-flash]
-  Cookie:      none (anonymous)
-  Proxy:       none
-  Impersonate: chrome_146
-  Tokenizer:   tiktoken cl100k_base
-  Per-IP 限流: 并发=5 / RPM=30 / RPH=80
-  Retry:       3x / 2s
-```
-
-An API key is generated on first boot. The banner masks it; the full value is on the **Settings** page of the admin panel.
+The repository Compose healthcheck checks that the binary runs. Use `GET /` for HTTP readiness.
 
 <a id="configuration"></a>
 
@@ -124,21 +175,22 @@ The server validates every configuration value, for example `retry_attempts` fro
 
 Both are stored in the database. The authenticated Settings page can display and copy the API key. Cookie lists return redacted summaries only.
 
-### Deploy-time config → [deployment configuration](../../deployments/docker-compose.yml)
+### Startup configuration
 
-These settings take effect after restarting the process:
+These settings take effect after restarting the process. For Docker deployments, also configure port mappings and volumes in Compose or `docker run`:
 
 | Item | Where |
 |---|---|
-| Listening port | `ports` + `command: --port` |
-| Database path | `volumes` + `command: --db` |
-| `ADMIN_TOKEN` | `environment`, the panel login token |
+| Listening address | `host` in `config.json`, default `0.0.0.0` |
+| Listening port | `--port`; map the container port with `ports` or `-p` |
+| Database path | `--db`; persist container data with `volumes` or `-v` |
+| Admin token | `--admin-token` or `ADMIN_TOKEN`, used to sign in to the panel |
 
 The `API_KEY` environment variable fixes the key at deployment time and makes it read-only in the panel.
 
 `--proxy` and `--cookie-file` import values into the proxy and cookie pools at startup, deduplicated by URL and cookie contents respectively. Manage the pools from the panel afterwards. Restart after changing the flags to import new values.
 
-Command-line flags still work and are meant as temporary overrides during local debugging. Precedence: **panel changes > CLI flags / `config.json` > built-in defaults**.
+Startup flags and `config.json` specify deployment settings and initial runtime values. Precedence: **panel changes > CLI flags / `config.json` > built-in defaults**.
 
 When running the binary directly, copy [`configs/config.example.json`](../../configs/config.example.json) to `config.json` as a starting template. The program reads the explicit `--config` path, or `./config.json` in its working directory when the flag is omitted. Missing local configuration falls back to built-in defaults. Tunables in that file only seed the first boot; once changed in the panel, the panel wins.
 
@@ -149,7 +201,7 @@ All flags:
 | `--port` | listening port, default 8083 |
 | `--config` | path to `config.json` |
 | `--db` | SQLite path, default `./data/gemrelay.db` |
-| `--admin-token` | Panel login token; leaving it empty disables authentication and is suitable only for local deployments bound to 127.0.0.1 |
+| `--admin-token` | Panel login token; set it for public or LAN deployments. Local debugging bound to a loopback address can leave it empty to disable authentication |
 | `--api-key` | Fixes the `/v1/*` key at deployment time and makes it read-only in the panel, equivalent to the `API_KEY` environment variable |
 | `--cookie-file` | imports the cookie in this file into the cookie pool at startup |
 | `--proxy` | imports this proxy into the proxy pool at startup |

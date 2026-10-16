@@ -2,22 +2,92 @@
 
 [首页](../README.md) · [English](en/deployment.md)
 
-命令均从仓库根目录执行。
+可使用已发布的 Docker 镜像或二进制部署。以下镜像示例使用 `latest` 标签，将 `your-admin-token` 换成自己的管理员令牌。
 
 <a id="quick-start"></a>
 
 ## 快速开始
 
-### 下载预编译二进制
+### Docker 镜像
 
-从 [Releases](https://github.com/Yoyo-514/GemRelay/releases) 下载对应平台的单文件程序，直接运行：
+镜像发布在 [GHCR](https://github.com/Yoyo-514/GemRelay/pkgs/container/gemrelay)，支持 Linux amd64 / arm64。在 Linux 部署机器执行：
 
 ```bash
-chmod +x gemrelay_*
-./gemrelay_* --port 8083 --admin-token your-admin-token
+docker pull ghcr.io/yoyo-514/gemrelay:latest
+docker run -d --name gemrelay \
+  -p 0.0.0.0:8083:8083 \
+  -v "gemrelay-data:/data" \
+  ghcr.io/yoyo-514/gemrelay:latest \
+  --db "/data/gemrelay.db" --port 8083 --admin-token your-admin-token
 ```
 
-数据默认落在 `./data/gemrelay.db`，换位置加 `--db /your/path.db`。
+容器内的数据库路径为 `/data/gemrelay.db`，由 `gemrelay-data` 卷持久化。升级前请备份数据。端口绑定部署机器的 `0.0.0.0`，可通过公网或局域网 IP 访问。
+
+版本标签（`vX.Y.Z`）对应正式发布；`main` 和 `latest` 跟随主分支构建。按版本部署时，使用发布页对应的镜像标签。
+
+### Docker Compose
+
+Linux 和 Windows Docker Desktop 均可使用 Docker Compose v2。在部署目录保存以下内容为 `compose.yaml`：
+
+```yaml
+services:
+  gemrelay:
+    image: ghcr.io/yoyo-514/gemrelay:latest
+    container_name: gemrelay
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8083:8083"
+    volumes:
+      - gemrelay-data:/data
+    command: ["--db", "/data/gemrelay.db", "--port", "8083", "--admin-token", "your-admin-token"]
+
+volumes:
+  gemrelay-data:
+```
+
+在同一目录执行：
+
+```bash
+docker compose -f "compose.yaml" pull
+docker compose -f "compose.yaml" up -d
+```
+
+### 二进制
+
+从[最新 Release](https://github.com/Yoyo-514/GemRelay/releases/latest) 下载对应系统和架构的单文件程序。发布文件名带有版本号，可按下列后缀选择：
+
+| 系统 | amd64（x86-64） | arm64 |
+|---|---|---|
+| Linux | `*_linux_amd64` | `*_linux_arm64` |
+| macOS | `*_darwin_amd64` | `*_darwin_arm64` |
+| Windows | `*_windows_amd64.exe` | `*_windows_arm64.exe` |
+
+下载后，将 Linux / macOS 程序重命名为 `gemrelay`，Windows 程序重命名为 `gemrelay.exe`。
+
+Linux / macOS 在程序所在目录添加执行权限并启动：
+
+```bash
+chmod +x "./gemrelay"
+"./gemrelay" --port 8083 --admin-token your-admin-token
+```
+
+Windows 在程序所在目录用 PowerShell 启动：
+
+```powershell
+& "./gemrelay.exe" --port 8083 --admin-token your-admin-token
+```
+
+二进制将数据保存在工作目录的 `./data/gemrelay.db`，可通过 `--db` 指定其他路径。
+
+### 登录与接入
+
+服务默认监听 `0.0.0.0:8083`。将 `SERVER_IP` 换成服务器的公网或局域网 IP，并在主机防火墙和云服务器安全组中放行 TCP 8083 端口。
+
+打开 `http://SERVER_IP:8083/admin`，用管理员令牌登录。首次启动会生成 API Key，启动输出显示脱敏值，完整值在「设置」页查看。
+
+客户端 Base URL 填 `http://SERVER_IP:8083/v1`，API Key 使用面板中的值。调用示例见 [API、模型与客户端](api.md)。
+
+## 数据库
 
 数据库默认为 SQLite。使用 MySQL / PostgreSQL 时，设置 `SQL_DSN` 环境变量：
 
@@ -30,59 +100,41 @@ SQL_DSN="postgres://user:pass@host:5432/dbname?sslmode=disable"
 
 建表自动完成，三种库共用同一套 schema。单实例可使用默认 SQLite，多实例共享池数据可使用 MySQL / PostgreSQL。
 
-### 运行本地 Docker 镜像
+## 从源码构建
 
-从仓库根目录构建并运行：
+### Go 二进制
 
-```bash
-docker build -f build/package/Dockerfile -t gemrelay:local .
-docker run -d --name gemrelay \
-  -p 127.0.0.1:8083:8083 \
-  -v gemrelay-data:/data \
-  -e ADMIN_TOKEN=your-admin-token \
-  gemrelay:local
-```
-
-使用 Docker Compose v2 时，从当前仓库根目录执行。配置会构建本地镜像 `gemrelay:local`，管理员令牌必须提供：
-
-```bash
-ADMIN_TOKEN=your-admin-token docker compose -f deployments/docker-compose.yml up -d --build
-```
-
-### 从源码跑
-
-需要 Go 1.27.2 或更新版本。在本仓根目录执行：
+需要 Go 1.27.2 或更新版本。在仓库根目录执行：
 
 ```bash
 go build -o gemrelay ./cmd/gemrelay
 ./gemrelay --port 8083 --admin-token your-admin-token
 ```
 
-本仓的 [部署配置](../deployments/docker-compose.yml) 使用完整仓库构建镜像。构建上下文为仓库根目录，镜像定义位于 [build/package/Dockerfile](../build/package/Dockerfile)。[构建忽略规则](../.dockerignore)采用允许列表，包含生产源码、模块清单与嵌入资源。
+### 本地 Docker 镜像
 
-PowerShell 可先设置环境变量，再运行同一条 Compose 命令。也可通过 `docker compose --env-file .env -f deployments/docker-compose.yml up -d --build` 读取本地环境文件；含令牌或数据库凭据的文件请留在本地。
+在仓库根目录构建并运行：
 
-GemRelay 默认使用独立的 `gemrelay-data` 卷；请在更换部署前自行备份。当前 healthcheck 只确认二进制能运行；HTTP 就绪检查请请求 `GET /`。
-
-旧版本启动输出示例（版本、模型和状态以当前运行结果为准）：
-
-```
-gemini-web2api-go v4.0.0
-  Listening:   http://0.0.0.0:8083
-  Base URL:    http://localhost:8083/v1
-  API key:     sk-gemini-XX...XXXX  (mutable in admin UI)
-  Admin UI:    http://localhost:8083/admin  (token auth)
-  DB:          ./data/gemini.db
-  Models:      [gemini-3.5-flash-lite gemini-3.6-flash]
-  Cookie:      none (anonymous)
-  Proxy:       none
-  Impersonate: chrome_146
-  Tokenizer:   tiktoken cl100k_base
-  Per-IP 限流: 并发=5 / RPM=30 / RPH=80
-  Retry:       3x / 2s
+```bash
+docker build -f build/package/Dockerfile -t gemrelay:local .
+docker run -d --name gemrelay \
+  -p 0.0.0.0:8083:8083 \
+  -v gemrelay-data:/data \
+  -e ADMIN_TOKEN=your-admin-token \
+  gemrelay:local
 ```
 
-首次启动会自动生成 API key（banner 里是打码的，完整值在管理面板「设置」页）。
+仓库中的 [Compose 配置](../deployments/docker-compose.yml) 默认拉取远程镜像。选择本地构建时，将 `image` 改为 `gemrelay:local`，`pull_policy` 改为 `build`，并启用注释中的 `build` 块。构建上下文为仓库根目录，镜像定义位于 [build/package/Dockerfile](../build/package/Dockerfile)。[构建忽略规则](../.dockerignore)采用允许列表，包含生产源码、模块清单与嵌入资源。
+
+启用本地构建后，在 Git Bash 或 Linux 终端中提供管理员令牌并启动：
+
+```bash
+ADMIN_TOKEN=your-admin-token docker compose -f deployments/docker-compose.yml up -d --build
+```
+
+PowerShell 可先设置 `ADMIN_TOKEN`，再执行 Compose 的 `up -d --build`。也可通过 `docker compose --env-file ".env" -f "deployments/docker-compose.yml" up -d --build` 读取本地环境文件；含令牌或数据库凭据的文件请留在本地。
+
+仓库 Compose 的 healthcheck 检查二进制能否运行；HTTP 就绪检查使用 `GET /`。
 
 <a id="configuration"></a>
 
@@ -124,22 +176,23 @@ gemini-web2api-go v4.0.0
 
 两者均保存在数据库中。已鉴权的「设置」页可以查看和复制 API Key；Cookie 列表仅返回脱敏摘要。
 
-### 部署期配置 → [部署配置](../deployments/docker-compose.yml)
+### 启动配置
 
-以下项目在修改后重启进程生效：
+以下项目在修改后重启进程生效。Docker 部署还需在 Compose 或 `docker run` 中设置端口映射和数据卷：
 
 | 项 | 位置 |
 |---|---|
-| 监听端口 | `ports` + `command: --port` |
-| 数据库路径 | `volumes` + `command: --db` |
-| `ADMIN_TOKEN` | `environment`，面板登录 token |
+| 监听地址 | `config.json` 中的 `host`，默认 `0.0.0.0` |
+| 监听端口 | `--port`；容器端口通过 `ports` 或 `-p` 映射 |
+| 数据库路径 | `--db`；容器数据通过 `volumes` 或 `-v` 持久化 |
+| 管理员令牌 | `--admin-token` 或 `ADMIN_TOKEN`，用于面板登录 |
 
 `API_KEY` 环境变量将 API Key 固定为部署值，面板显示为只读。
 
 `--proxy` 和 `--cookie-file` 用于启动导入：将值写入代理池 /
 Cookie 池，分别按 URL 和 Cookie 内容去重，后续从面板管理。修改参数后重启即可导入新值。
 
-命令行参数仍然可用，定位是本地调试时的临时覆盖。优先级：
+启动参数和 `config.json` 用于指定部署参数与运行时初值。配置优先级：
 **面板改动 > CLI flag / `config.json` > 内置默认**。
 
 直接运行二进制时，可以把 [`configs/config.example.json`](../configs/config.example.json) 复制成 `config.json` 当启动模板
@@ -153,7 +206,7 @@ Cookie 池，分别按 URL 和 Cookie 内容去重，后续从面板管理。修
 | `--port` | 监听端口，默认 8083 |
 | `--config` | 指定 `config.json` 路径 |
 | `--db` | SQLite 路径，默认 `./data/gemrelay.db` |
-| `--admin-token` | 面板登录 token；留空会关闭面板鉴权，仅限绑定 127.0.0.1 的本机部署使用 |
+| `--admin-token` | 面板登录 token；公网或局域网部署时设置。本机回环监听的调试可留空以关闭面板鉴权 |
 | `--api-key` | 将 `/v1/*` 的 key 固定为部署值，面板只读，等价于 `API_KEY` 环境变量 |
 | `--cookie-file` | 启动时把文件里的 cookie 导入 Cookie 池 |
 | `--proxy` | 启动时把这个代理导入代理池 |

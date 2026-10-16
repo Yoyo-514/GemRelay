@@ -1,51 +1,53 @@
 services:
   gemrelay:
-    # 构建当前仓库版本，需要 Docker Compose v2。
-    # 从仓库根目录运行：docker compose -f deployments/docker-compose.yml up -d --build
-    image: gemrelay:local
-    pull_policy: build
-    build:
-      context: ..
-      dockerfile: build/package/Dockerfile
+    # 默认拉取远程镜像，需要 Docker Compose v2。
+    # 从仓库根目录运行：docker compose -f "deployments/docker-compose.yml" up -d
+    image: ghcr.io/yoyo-514/gemrelay:latest
+    pull_policy: always
+
+    # 本地源码构建（可选）：将 image 改为 gemrelay:local，pull_policy 改为 build，
+    # 启用下方 build 块，并在启动命令中加上 --build。
+    # build:
+    #   context: ..
+    #   dockerfile: build/package/Dockerfile
     container_name: gemrelay
     restart: unless-stopped
 
-    # ── 这里只放"改了必须重启进程"的东西 ──────────────────────────────────
+    # ── 启动配置：修改后重启服务生效 ─────────────────────────────────────
     # 调优参数（限流额度、重试、超时、默认模型、TLS 指纹、bl 版本、降级开关、
     # 日志开关、保留天数）在管理面板「设置 → 运行时配置」里改。
     # 已有网络客户端会缓存超时，修改超时后重启服务可确保全部出口更新。
     # 凭证（API Key、Google Cookie）也在面板里管，存数据库。
-    # API_KEY 可锁定接口密钥；cookie 文件只用于启动播种，不锁定后续面板管理。
+    # API_KEY 可固定接口密钥；Cookie 文件用于启动导入，后续仍可从面板管理。
 
     ports:
-      - "127.0.0.1:8083:8083"
-    # 想暴露给同 docker network 的其他容器（不走公网），改用:
+      - "0.0.0.0:8083:8083"
+    # 通过同一 Docker 网络访问时，可改用：
     # expose:
     #   - "8083"
     # 然后让其他容器加入下面的 default network 或自定义 network。
 
     volumes:
-      # 用具名卷而不是 ../data:/data —— 镜像以 nonroot(uid 65532) 运行，而 bind mount
-      # 会用宿主目录的属主盖掉镜像里 /data 的属主。宿主上目录不存在时 Docker 自动建、
-      # 属主是 root，容器就写不进去，报 `unable to open database file (14)`。
-      # 具名卷由 Docker 从镜像继承属主，不会踩这个坑。
+      # 镜像以 nonroot(uid 65532) 运行，具名卷继承 /data 的目录属主。
+      # bind mount 使用宿主目录的属主；Docker 自动创建的目录通常属于 root，
+      # 可能导致 SQLite 报 `unable to open database file (14)`。
       - gemrelay-data:/data                           # SQLite + 历史记录持久化
-      # 一定要用 bind mount 的话，先把属主改过来：sudo chown -R 65532:65532 ../data
+      # 使用 bind mount 前设置目录属主：sudo chown -R 65532:65532 "../data"
       # - ../data:/data
       # - ../cookie.txt:/app/cookie.txt:ro         # 可选：启动时把这个文件导入 Cookie 池
 
     environment:
-      # 必须通过环境变量或 Compose 的 --env-file 提供，避免使用公开的默认令牌。
+      # 通过环境变量或 Compose 的 --env-file 提供自己的管理员令牌。
       ADMIN_TOKEN: "${ADMIN_TOKEN:?Set ADMIN_TOKEN before starting the service}"
-      # 可选：锁定 /v1/* 和 /mcp 的 API key，设了之后面板改不了。
-      # 不设则首次启动自动生成，在面板里轮换。
+      # 可选：固定 /v1/* 和 /mcp 的 API Key，面板显示为只读。
+      # 省略时在首次启动生成，可在面板中轮换。
       # API_KEY: "sk-gemrelay-your-key"
-      # 可选：切换数据库；包含凭据，建议通过外部环境文件管理，不提交到仓库。
+      # 可选：切换数据库；包含凭据，通过保留在本地的环境文件提供。
       # SQL_DSN: "${SQL_DSN}"
       TZ: "${TZ:-UTC}"
 
-    # 镜像自带 CMD ["--db","/data/gemrelay.db","--port","8083"]，一般不用改。
-    # 只有要加参数时才写 command，写了就会整个覆盖掉默认值，别漏 --db。
+    # 镜像默认参数为 ["--db","/data/gemrelay.db","--port","8083"]。
+    # command 会替换完整参数列表，添加参数时同时保留 --db 和 --port。
     # command: ["--db", "/data/gemrelay.db", "--port", "8083", "--cookie-file", "/app/cookie.txt"]
 
     healthcheck:

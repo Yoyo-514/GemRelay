@@ -52,22 +52,31 @@ func TestContainerBuildContract(t *testing.T) {
 	}
 }
 
-func TestComposeBuildsCurrentCheckout(t *testing.T) {
+func TestComposeUsesPublishedImage(t *testing.T) {
 	body, err := os.ReadFile("../../deployments/docker-compose.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := string(body)
+	active := regexp.MustCompile(`(?m)^\s*#.*$`).ReplaceAllString(text, "")
 	for _, want := range []string{
-		"image: gemrelay:local", "pull_policy: build", "context: ..",
-		"dockerfile: build/package/Dockerfile", "${ADMIN_TOKEN:?", "127.0.0.1:8083:8083", "gemrelay-data:/data",
+		"image: ghcr.io/yoyo-514/gemrelay:latest", "pull_policy: always",
+		"${ADMIN_TOKEN:?", "0.0.0.0:8083:8083", "gemrelay-data:/data",
 	} {
-		if !strings.Contains(text, want) {
+		if !strings.Contains(active, want) {
 			t.Errorf("部署契约缺少 %q", want)
 		}
 	}
-	if strings.Contains(text, "ghcr.io/zexadev/") || strings.Contains(text, "change-me-in-production") {
-		t.Fatal("本仓 Compose 不应默认运行上游镜像或公开默认令牌")
+	if regexp.MustCompile(`(?m)^\s*build:`).MatchString(active) {
+		t.Fatal("默认部署应直接拉取发布镜像")
+	}
+	if strings.Contains(active, "ghcr.io/zexadev/") || strings.Contains(active, "change-me-in-production") {
+		t.Fatal("Compose 应使用本项目镜像和自定义管理员令牌")
+	}
+	for _, want := range []string{"# build:", "#   context: ..", "#   dockerfile: build/package/Dockerfile"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("可选源码构建说明缺少 %q", want)
+		}
 	}
 	context := filepath.Clean(filepath.Join("../../deployments", ".."))
 	if _, err := os.Stat(filepath.Join(context, "build/package/Dockerfile")); err != nil {

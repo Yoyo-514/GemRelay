@@ -1,5 +1,9 @@
 # syntax=docker/dockerfile:1.7
 
+# 远程部署使用 deployments/docker-compose.yml，默认拉取 GHCR 镜像。
+# 本文件用于 CI 发布镜像和可选的本地源码构建。
+# 本地构建：docker build -f "build/package/Dockerfile" -t gemrelay:local "."
+
 # ─── Build stage ─────────────────────────────────────────────────────────────
 # --platform=$BUILDPLATFORM: builder 永远跑在构建机的原生架构上,靠 GOARCH 交叉
 # 编译出目标架构的二进制。多架构构建时如果让 builder 跟着目标平台走,arm64 那份

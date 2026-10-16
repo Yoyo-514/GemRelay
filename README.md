@@ -41,19 +41,41 @@
 
 ## 快速开始
 
-源码构建需要 Go 1.27.2 或更新版本。在本仓根目录执行：
+### Docker
+
+在 Linux 部署机器使用已发布的镜像启动服务，将 `your-admin-token` 换成自己的管理员令牌：
 
 ```bash
-go build -o gemrelay ./cmd/gemrelay
-./gemrelay --port 8083 --admin-token your-admin-token
+docker run -d --name gemrelay \
+  -p 0.0.0.0:8083:8083 \
+  -v "gemrelay-data:/data" \
+  ghcr.io/yoyo-514/gemrelay:latest \
+  --db "/data/gemrelay.db" --port 8083 --admin-token your-admin-token
 ```
 
-打开 `http://localhost:8083/admin`，用管理员令牌登录，在「设置」页查看 API Key。默认数据库为 `./data/gemrelay.db`，首次启动会生成 API Key。
+镜像支持 Linux amd64 / arm64，数据保存在 `gemrelay-data` 卷中。`latest` 跟随主分支构建。
+
+### 二进制
+
+从[最新 Release](https://github.com/Yoyo-514/GemRelay/releases/latest) 下载对应系统和架构的程序，重命名为 `gemrelay`（Windows 使用 `gemrelay.exe`）。Linux / macOS 在程序所在目录执行：
+
+```bash
+chmod +x "./gemrelay"
+"./gemrelay" --port 8083 --admin-token your-admin-token
+```
+
+二进制默认将数据保存在工作目录的 `./data/gemrelay.db`。Windows、macOS 和 Compose 的步骤见[部署与配置](docs/deployment.md)。
+
+### 连接客户端
+
+服务默认监听 `0.0.0.0:8083`。将下文的 `SERVER_IP` 换成服务器的公网或局域网 IP，并在主机防火墙和云服务器安全组中放行 TCP 8083 端口。
+
+打开 `http://SERVER_IP:8083/admin`，用管理员令牌登录，在「设置」页查看首次启动生成的 API Key。
 
 调用示例：
 
 ```bash
-curl http://localhost:8083/v1/chat/completions \
+curl "http://SERVER_IP:8083/v1/chat/completions" \
   -H "Authorization: Bearer sk-gemrelay-..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -62,9 +84,9 @@ curl http://localhost:8083/v1/chat/completions \
   }'
 ```
 
-客户端 Base URL 填 `http://localhost:8083/v1`，API Key 使用面板中的值，模型可先选 `gemini-3.6-flash`。
+客户端 Base URL 填 `http://SERVER_IP:8083/v1`，API Key 使用面板中的值，模型可先选 `gemini-3.6-flash`。
 
-Docker、数据库和配置项见[部署与配置](docs/deployment.md)。Compose 默认构建本仓源码。
+数据库、启动配置和源码构建见[部署与配置](docs/deployment.md)。
 
 ## 文档
 
@@ -86,14 +108,14 @@ Docker、数据库和配置项见[部署与配置](docs/deployment.md)。Compose
 
 ## 致谢
 
-- [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-go)：本仓基于该 Go 项目修改，感谢原作者的实现与协议研究。
+- [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-go) — 本仓基于该 Go 项目修改，感谢原作者的实现与协议研究
 - [bogdanfinn/tls-client](https://github.com/bogdanfinn/tls-client) — Chrome 真指纹 TLS 库
 - [pkoukk/tiktoken-go](https://github.com/pkoukk/tiktoken-go) — BPE tokenizer
 - [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) — 纯 Go SQLite（CGO-free，alpine 直接编）
 
 ## License
 
-MIT — 详见 [LICENSE](LICENSE)
+[MIT License](LICENSE)
 
 ## 友情链接
 
