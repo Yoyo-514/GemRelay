@@ -3,6 +3,18 @@
 本仓使用独立版本号，遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 更早的版本记录见 [zexadev/gemini-web2api-go 的 CHANGELOG](https://github.com/zexadev/gemini-web2api-go/blob/main/CHANGELOG.md)。
 
+## 0.2.0
+
+### 新增
+
+- 按额度选择账号，使用 20 秒内的额度快照并按需异步更新。
+- Cookie 池支持可配置的额度轮询，随页面可见状态暂停和恢复。
+- 额度刷新失败时保留上次成功数据，并显示缓存提示。
+
+### 改进
+
+- 调整管理页渲染，补充额度调度与浏览器回归测试。
+
 ## 0.1.0
 
 基于 [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-go) 的首个独立版本。
