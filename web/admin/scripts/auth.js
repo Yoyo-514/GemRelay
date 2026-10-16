@@ -12,6 +12,9 @@ async function doLogout() {
 }
 
 function renderLogin() {
+  stopCookieQuotaPolling();
+  currentPage = null;
+  ++pageSeq;
   document.getElementById('app').innerHTML = `
     <form class="login-box" onsubmit="doLogin(event)">
       <h1><span class="spark" style="width:20px;height:20px;background:var(--g-sweep);

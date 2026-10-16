@@ -19,9 +19,14 @@ Run commands from the repository root.
 ### Usage quota
 
 The Cookie pool's **Usage quota** column shows each account's remaining percentage and reset time
-for the Gemini web app's **5-hour / weekly** limits. Opening the page queries up to three accounts
-concurrently; subsequent updates use the Refresh button, which skips the server's 20-second cache.
-Disabled accounts remain queryable. Missing buckets show “not provided”; failed queries show the error.
+for the Gemini web app's **5-hour / weekly** limits. While visible, the page queries up to three
+accounts concurrently and waits 60 seconds after each round. Adjust `quota_poll_interval_sec`
+in Settings (10–3600 seconds). Leaving the page, hiding the tab or signing out pauses polling;
+returning to the visible page resumes it.
+Successful queries show quota and reset times. A failed refresh keeps the last successful values
+with an amber cached-data label and the error. Recovery updates the values and clears the label.
+An initial failure shows the error. The Refresh button skips the server's 20-second cache.
+Disabled accounts remain queryable; missing buckets show “not provided”.
 
 `GET /admin/api/quota[?account_id=N][&refresh=1]` uses the existing admin authentication.
 Without an account ID it selects an enabled account. Query failures return HTTP 200 with
@@ -36,8 +41,28 @@ Without an account ID it selects an enabled account. Query failures return HTTP 
 
 The lookup uses a separate read-only path, leaving account rotation, health, exit bindings and
 generation rate-limit counts unchanged. It prefers the account's available proxy; `fallback_direct`
-controls direct fallback. Successful results are cached for 20 seconds by actual account, cookie and
-exit identity. Concurrent queries for the same identity share one upstream call; failures clear the cache.
+controls direct fallback. Successful results are stored by actual account, cookie and exit identity;
+admin queries reuse them for 20 seconds. Concurrent queries for the same identity share one upstream
+call. A failure clears the server snapshot; the page retains its last successful result for the current visit.
+
+### Quota-aware account selection
+
+Enable `quota_aware_pick` in Settings to rank accounts by the lower remaining value across the two
+quota windows. The priority is sufficient quota (≥10%), unknown quota, then low quota (<10%).
+Sufficient accounts are grouped into 20-percentage-point bands. Within a band, health, least-recently-used
+time and account ID determine the order. When every account has low quota, selection uses the highest
+remaining value.
+
+Selection shares the admin query's 20-second freshness window. Missing or expired snapshots,
+including those reaching a quota reset time, count as unknown and trigger an asynchronous lookup.
+Subsequent requests use the updated values. Lookups run up to three at a time, with at most one
+start per identity every 20 seconds. Single-turn requests, account retries and new
+multi-turn sessions share this policy. Continuing sessions retain their account. The default setting
+is off and uses the existing account order.
+
+This policy distributes requests; account access and actual quota remain upstream decisions.
+Strict model checks can be enabled separately to detect model changes in responses.
+
 The reverse-engineered web RPC `jSf9Qc` and parsing criteria follow the MIT project
 [Nagi-ovo/voyager](https://github.com/Nagi-ovo/voyager) (`usageParsing.ts`). This independent endpoint
 can fail after upstream changes or for accounts lacking the usage page, independently of generation.

@@ -53,6 +53,9 @@ type Config struct {
 	TemporaryChat bool `json:"temporary_chat"`
 	// 严格模型校验：上游自报模型与请求不符时明确失败。默认关闭。
 	StrictModel bool `json:"strict_model"`
+	// 按额度跨带选号，默认关闭；轮询仅在管理页可见时运行。
+	QuotaAwarePick       bool `json:"quota_aware_pick"`
+	QuotaPollIntervalSec int  `json:"quota_poll_interval_sec"`
 }
 
 var cfg Config
@@ -95,6 +98,7 @@ func defaultConfig() Config {
 		AutoDeleteConversation: false,
 		AnonFirst:              false,
 		TemporaryChat:          false,
+		QuotaPollIntervalSec:   60,
 	}
 }
 

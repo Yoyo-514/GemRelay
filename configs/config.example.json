@@ -1,5 +1,7 @@
 {
   "strict_model": false,
+  "quota_aware_pick": false,
+  "quota_poll_interval_sec": 60,
   "port": 8083,
   "host": "0.0.0.0",
   "db_path": "./data/gemrelay.db",

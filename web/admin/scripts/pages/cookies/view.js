@@ -3,7 +3,7 @@ function renderCookiePool(data) {
     const items = data.items || [];
     const deadN = items.filter(a => a.health === 'dead').length;
     return `
-      <div class="panel page-fill">
+      <div class="panel page-fill" data-quota-poll-ms="${data.quota_poll_interval_sec * 1000}">
         <h2>Cookie 池
           <span class="controls">
             ${deadN > 0 ? '<span class="badge fail" style="margin-right:8px" title="这些号鉴权在失败，多半 cookie 过期了，建议用 Firefox 重新导出">' + deadN + ' 疑似失效</span>' : ''}

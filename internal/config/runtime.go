@@ -59,6 +59,10 @@ type RuntimeConfig struct {
 	TemporaryChat bool `json:"temporary_chat"`
 	// StrictModel 开启后拒绝已确认的模型不匹配；流式已发送的内容无法撤回。
 	StrictModel bool `json:"strict_model"`
+	// 只在跨额度带时改变选号优先级，同带保留健康度与轮转顺序。
+	QuotaAwarePick bool `json:"quota_aware_pick"`
+	// Cookie 池可见时的额度轮询间隔，单位秒。
+	QuotaPollIntervalSec int `json:"quota_poll_interval_sec"`
 }
 
 const RuntimeConfigKey = "runtime_config"

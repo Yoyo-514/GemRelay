@@ -24,12 +24,14 @@
 
 /* 额度归属于账号：桌面保留表格，窄屏将同一行完整展开，避免横向寻找额度。 */
 .table-scroll > table.accounts-table { min-width: 1540px; }
+.quota-content { display: grid; gap: 6px; }
 .quota-cell { display: grid; gap: 6px; font-size: 12px; overflow-wrap: anywhere; }
 .quota-cell .quota-line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .quota-cell .quota-remaining { font-variant-numeric: tabular-nums; font-weight: 600; }
 .quota-cell .quota-remaining.warn { color: var(--warn); }
 .quota-cell .quota-remaining.fail, .quota-cell .quota-error { color: var(--fail); }
 .quota-cell .quota-meta { color: var(--muted); font-size: 11px; }
+.quota-cell .quota-stale { color: var(--warn); font-size: 11px; }
 .quota-cell .btn { justify-self: start; }
 
 @media (max-width: 600px) {

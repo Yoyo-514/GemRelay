@@ -11,10 +11,25 @@ const pages = {
 let currentPage = null;
 let pageSeq = 0;
 
+// 挂载页面渲染函数生成的模板，保持各页面现有的返回格式。
+function mountPageMarkup(target, markup) {
+  const page = new DOMParser().parseFromString(markup, 'text/html');
+  target.replaceChildren(...page.body.childNodes);
+}
+
+function showPageMessage(target, message, role) {
+  const text = document.createElement('div');
+  text.className = 'empty';
+  text.textContent = message;
+  if (role) text.setAttribute('role', role);
+  target.replaceChildren(text);
+}
+
 // 点已经选中的导航项直接忽略：重新拉一遍数据、整块内容闪一下再画回原样，
 // 用户看到的只是抖动。要重新取数有「刷新」按钮，走 refreshPage()。
 async function switchPage(name, force = false) {
   if (!force && name === currentPage) return;
+  stopCookieQuotaPolling();
   const seq = ++pageSeq;
   currentPage = name;
 
@@ -30,19 +45,19 @@ async function switchPage(name, force = false) {
 
   // 旧内容先留着，超过 200ms 还没好才显示占位——快的时候完全不闪
   const slow = setTimeout(() => {
-    if (seq === pageSeq) main.innerHTML = '<div class="empty">加载中…</div>';
+    if (seq === pageSeq) showPageMessage(main, '加载中…');
   }, 200);
   let html;
   try {
     html = await pages[name]();
   } catch (e) {
     clearTimeout(slow);
-    if (seq === pageSeq) main.innerHTML = '<div class="empty" role="alert">页面加载失败：' + escapeHtml(e.message) + '</div>';
+    if (seq === pageSeq) showPageMessage(main, '页面加载失败：' + e.message, 'alert');
     return;
   }
   clearTimeout(slow);
   if (seq !== pageSeq) return;   // 期间又点了别的页，丢弃这次结果
-  main.innerHTML = html;
+  mountPageMarkup(main, html);
   labelTableCells(main);
 
   if (name === 'dashboard') {
@@ -61,7 +76,7 @@ async function switchPage(name, force = false) {
     await loadRtCfg();
   }
   if (name === 'cookies') {
-    await loadCookieQuotas();
+    startCookieQuotaPolling();
   }
 }
 
@@ -141,7 +156,7 @@ function renderShellMarkup(collapsed) {
 
 function renderShell() {
   const collapsed = (() => { try { return localStorage.getItem('sbCollapsed') === '1'; } catch (e) { return false; } })();
-  document.getElementById('app').innerHTML = renderShellMarkup(collapsed);
+  mountPageMarkup(document.getElementById('app'), renderShellMarkup(collapsed));
   switchPage('dashboard');
   loadSideStat();
 }
@@ -160,11 +175,26 @@ async function loadSideStat() {
     const ht = document.getElementById('healthText');
     if (dot) { dot.classList.remove('pending'); dot.classList.toggle('bad', !root); }
     if (ht) ht.textContent = root ? '运行中' : '无法连接';
-    box.innerHTML = [
-      ['版本', root ? 'v' + root.version : '—'],
-      ['模型', root ? root.models.length + ' 个' : '—'],
-      ['Cookie', ck && ck.items && ck.items.length ? ck.items.length + ' 个' : '匿名'],
-      ['IP slot', usage ? (usage.items || []).length + ' 个' : '—'],
-    ].map(([k, v]) => `<div class="sf-row"><span>${k}</span><b>${v}</b></div>`).join('');
-  } catch (e) { box.innerHTML = ''; }
+    box.replaceChildren(renderSideStats(root, ck, usage));
+  } catch (e) { box.replaceChildren(); }
+}
+
+function renderSideStats(root, ck, usage) {
+  const rows = document.createDocumentFragment();
+  for (const [label, value] of [
+    ['版本', root ? 'v' + root.version : '—'],
+    ['模型', root ? root.models.length + ' 个' : '—'],
+    ['Cookie', ck && ck.items && ck.items.length ? ck.items.length + ' 个' : '匿名'],
+    ['IP slot', usage ? (usage.items || []).length + ' 个' : '—'],
+  ]) {
+    const row = document.createElement('div');
+    row.className = 'sf-row';
+    const name = document.createElement('span');
+    name.textContent = label;
+    const text = document.createElement('b');
+    text.textContent = value;
+    row.append(name, text);
+    rows.append(row);
+  }
+  return rows;
 }

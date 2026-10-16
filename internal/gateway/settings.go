@@ -35,6 +35,8 @@ func InitRuntimeConfig() {
 		AnonFirst:              config.Startup().AnonFirst,
 		TemporaryChat:          config.Startup().TemporaryChat,
 		StrictModel:            config.Startup().StrictModel,
+		QuotaAwarePick:         config.Startup().QuotaAwarePick,
+		QuotaPollIntervalSec:   config.Startup().QuotaPollIntervalSec,
 	}
 	if raw := storage.GetValue(config.RuntimeConfigKey); raw != "" {
 		saved := base
@@ -70,6 +72,7 @@ func validateRuntimeConfig(c config.RuntimeConfig) error {
 		{"retention_days", c.RetentionDays, 1, 3650},
 		{"proxy_cooldown_min", c.ProxyCooldownMin, 0, 10080},
 		{"max_prompt_bytes", c.MaxPromptBytes, 0, 10000000},
+		{"quota_poll_interval_sec", c.QuotaPollIntervalSec, 10, 3600},
 	} {
 		if r.v < r.min || r.v > r.max {
 			return fmt.Errorf("%s=%d 超出允许范围 [%d, %d]", r.name, r.v, r.min, r.max)

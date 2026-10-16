@@ -79,6 +79,7 @@ func HandleAdminCookies(w http.ResponseWriter, r *http.Request) {
 		total, enabled := pool.AccountCount()
 		writeJSON(w, 200, map[string]interface{}{
 			"items": items, "total": total, "enabled": enabled,
+			"quota_poll_interval_sec": config.Runtime().QuotaPollIntervalSec,
 		})
 	case http.MethodPost:
 		var p struct {

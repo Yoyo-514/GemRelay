@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"gemrelay/internal/cookies"
-	"gemrelay/internal/pool"
 )
 
 // loadCookie reads the cookie file (Netscape one-line format or JSON).
@@ -15,7 +14,7 @@ import (
 //
 // 第三个返回值是池里那条记录的 ID，请求结束后拿它调 markCookieByStatus 回写健康度。
 func loadCookie() (cookie, sapisid string) {
-	if a, ok := pool.PickCookieAccount(); ok {
+	if a, ok := PickCookieAccount(nil); ok {
 		return a.Cookie, cookies.SAPISID(a.Cookie)
 	}
 	return "", ""

@@ -28,23 +28,20 @@ type quotaKey struct {
 	identity  [32]byte
 }
 
-type quotaEntry struct {
-	snapshot QuotaSnapshot
-	at       time.Time
-}
-
 type quotaFlight struct {
 	done     chan struct{}
 	snapshot QuotaSnapshot
 }
 
+// 管理查询、选号和异步补查共用 20 秒刷新周期。
 const quotaCacheTTL = 20 * time.Second
 
 var quotaState = struct {
 	sync.Mutex
-	cache   map[quotaKey]quotaEntry
+	cache   map[quotaKey]QuotaSnapshot
 	flights map[quotaKey]*quotaFlight
-}{cache: make(map[quotaKey]quotaEntry), flights: make(map[quotaKey]*quotaFlight)}
+	warmAt  map[quotaKey]time.Time
+}{cache: make(map[quotaKey]QuotaSnapshot), flights: make(map[quotaKey]*quotaFlight), warmAt: make(map[quotaKey]time.Time)}
 
 // GetQuota 按实际账号和凭据/出口身份缓存，自动选号与指定同一账号共享并发请求。
 // 仅合并正在执行的查询；失败不缓存，过期项在后续查询中清理。
@@ -65,17 +62,22 @@ func GetQuota(force bool, accountID int64) QuotaSnapshot {
 	if snap.Direct {
 		snap.Proxy = "直连"
 	}
-	key := quotaKey{accountID: acct.ID, identity: sha256.Sum256([]byte(acct.Cookie + "\x00" + proxy.URL))}
+	key := accountQuotaKey(*acct, proxy.URL)
 	now := time.Now()
 	quotaState.Lock()
 	for k, entry := range quotaState.cache {
-		if now.Sub(entry.at) >= quotaCacheTTL {
+		if !quotaFresh(entry, now) {
 			delete(quotaState.cache, k)
+		}
+	}
+	for k, at := range quotaState.warmAt {
+		if now.Sub(at) >= quotaCacheTTL {
+			delete(quotaState.warmAt, k)
 		}
 	}
 	if entry, exists := quotaState.cache[key]; exists && !force {
 		quotaState.Unlock()
-		result := quotaSnapshotAt(entry.snapshot, now)
+		result := quotaSnapshotAt(entry, now)
 		result.Account, result.Proxy = snap.Account, snap.Proxy
 		result.Cached = true
 		return result
@@ -100,7 +102,7 @@ func GetQuota(force bool, accountID int64) QuotaSnapshot {
 	}
 	quotaState.Lock()
 	if snap.OK {
-		quotaState.cache[key] = quotaEntry{snapshot: snap, at: time.Now()}
+		quotaState.cache[key] = snap
 	} else {
 		delete(quotaState.cache, key)
 	}
@@ -109,6 +111,10 @@ func GetQuota(force bool, accountID int64) QuotaSnapshot {
 	close(flight.done)
 	quotaState.Unlock()
 	return quotaSnapshotAt(snap, time.Now())
+}
+
+func accountQuotaKey(acct pool.CookieAccount, proxyURL string) quotaKey {
+	return quotaKey{accountID: acct.ID, identity: sha256.Sum256([]byte(acct.Cookie + "\x00" + proxyURL))}
 }
 
 // 深拷贝指标并按读取时间重算倒计时，不能返回共享缓存中的可变指针。

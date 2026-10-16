@@ -292,6 +292,13 @@ func PickCookieAccount() (*CookieAccount, bool) {
 // 轮转会让大约一半请求撞上坏号 —— 表现就是"成功率莫名其妙很低"，而每次失败
 // 看起来都像是上游的问题。
 func PickCookieAccountExcept(skip map[int64]bool) (*CookieAccount, bool) {
+	return PickCookieAccountByPriority(skip, nil)
+}
+
+// PickCookieAccountByPriority 在原有健康度、轮转顺序上优先选分数较高的账号。
+// priority 从内存快照计算分数，同分保持原顺序。
+// 选号与使用时间写入由同一把锁保护，网络补查由 gateway 在返回后启动。
+func PickCookieAccountByPriority(skip map[int64]bool, priority func(CookieAccount) int) (*CookieAccount, bool) {
 	pickMu.Lock()
 	defer pickMu.Unlock()
 	// 健康的排前面，同样健康的按最久未用轮转。
@@ -307,6 +314,8 @@ func PickCookieAccountExcept(skip map[int64]bool) (*CookieAccount, bool) {
 		return nil, false
 	}
 	defer rows.Close()
+	var picked *CookieAccount
+	best := 0
 	for rows.Next() {
 		var a CookieAccount
 		if err := rows.Scan(&a.ID, &a.Label, &a.Cookie, &a.Status, &a.Note,
@@ -317,29 +326,43 @@ func PickCookieAccountExcept(skip map[int64]bool) (*CookieAccount, bool) {
 		if skip[a.ID] {
 			continue
 		}
-		// 先释放读取占用的连接，再写入；SQLite 单连接下不能持有游标等待第二条连接。
-		if err := rows.Close(); err != nil {
-			config.Logf("[db] 关闭候选账号查询失败: %v", err)
-			return nil, false
+		score := 0
+		if priority != nil {
+			score = priority(a)
 		}
-		now := time.Now().Unix()
-		result, err := storage.DB().Exec(`UPDATE accounts SET last_used_at=? WHERE id=? AND status='enabled'`, now, a.ID)
-		if err != nil {
-			config.Logf("[db] 更新账号 #%d 使用时间失败: %v", a.ID, err)
-			return nil, false
+		if picked == nil || score > best {
+			copy := a
+			picked, best = &copy, score
 		}
-		changed, err := result.RowsAffected()
-		if err != nil || changed == 0 {
-			config.Logf("[db] 账号 #%d 使用时间未更新，账号可能已被删除或停用: %v", a.ID, err)
-			return nil, false
+		if priority == nil {
+			break // 开关关闭时仍只读第一个可用候选。
 		}
-		a.LastUsedAt = now
-		return &a, true
 	}
 	if err := rows.Err(); err != nil {
 		config.Logf("[db] 遍历候选账号失败: %v", err)
+		return nil, false
 	}
-	return nil, false
+	// SQLite 单连接下，必须先关闭游标再写入。
+	if err := rows.Close(); err != nil {
+		config.Logf("[db] 关闭候选账号查询失败: %v", err)
+		return nil, false
+	}
+	if picked == nil {
+		return nil, false
+	}
+	now := time.Now().Unix()
+	result, err := storage.DB().Exec(`UPDATE accounts SET last_used_at=? WHERE id=? AND status='enabled'`, now, picked.ID)
+	if err != nil {
+		config.Logf("[db] 更新账号 #%d 使用时间失败: %v", picked.ID, err)
+		return nil, false
+	}
+	changed, err := result.RowsAffected()
+	if err != nil || changed == 0 {
+		config.Logf("[db] 账号 #%d 使用时间未更新，账号可能已被删除或停用: %v", picked.ID, err)
+		return nil, false
+	}
+	picked.LastUsedAt = now
+	return picked, true
 }
 
 // MarkCookieByStatus 按上游返回回写 cookie 健康度。

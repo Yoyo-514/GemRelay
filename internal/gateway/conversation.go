@@ -431,7 +431,7 @@ func CallGeminiConv(messages []map[string]interface{}, mc gemini.ModelConfig,
 		// 恒无，所以第二个参数传 false）。必须在调用前短路：pickCookieAccount 会更新
 		// last_used_at，调了不用等于白占一轮。
 		if !AnonymousEligible(mc, false) {
-			if a, ok := pool.PickCookieAccount(); ok {
+			if a, ok := PickCookieAccount(nil); ok {
 				conv.cookie = a.Cookie
 				conv.sapisid = cookies.SAPISID(a.Cookie)
 				conv.isLogin = true

@@ -121,7 +121,7 @@ func streamGenerateWithFiles(prompt, latest string, mc gemini.ModelConfig, pendi
 	// 带附件（图/视频）时不能走匿名——下面 uploadBytes 那段会因 cookieStr=="" 直接报错。
 	var acct *pool.CookieAccount
 	if !AnonymousEligible(mc, len(pending) > 0) {
-		if a, ok := pool.PickCookieAccount(); ok {
+		if a, ok := PickCookieAccount(nil); ok {
 			acct = a
 		}
 	}
@@ -213,7 +213,7 @@ func streamGenerateWithFiles(prompt, latest string, mc gemini.ModelConfig, pendi
 		pool.MarkCookieByStatus(acct.ID, 401, err.Error())
 		lastCookieErr = err
 		config.Logf("[cookie] 账号 #%d 不可用，换下一个：%v", acct.ID, err)
-		acct, _ = pool.PickCookieAccountExcept(tried) // 取不到时返回 nil，循环自然结束
+		acct, _ = PickCookieAccount(tried) // 候选用尽时返回 nil，结束循环
 	}
 	if lastCookieErr != nil && cookieStr == "" {
 		if !config.Runtime().FallbackAnon {

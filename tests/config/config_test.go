@@ -13,7 +13,7 @@ func TestLoadExplicitConfig(t *testing.T) {
 	old := *config.Startup()
 	t.Cleanup(func() { *config.Startup() = old })
 	path := filepath.Join(t.TempDir(), "config.json")
-	if err := os.WriteFile(path, []byte(`{"port":9083,"host":"127.0.0.1","multi_turn":true,"strict_model":true}`), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(`{"port":9083,"host":"127.0.0.1","multi_turn":true,"strict_model":true,"quota_aware_pick":true,"quota_poll_interval_sec":90}`), 0600); err != nil {
 		t.Fatal(err)
 	}
 	if err := config.Load(path); err != nil {
@@ -22,6 +22,9 @@ func TestLoadExplicitConfig(t *testing.T) {
 	got := config.Startup()
 	if got.Port != 9083 || got.Host != "127.0.0.1" || !got.MultiTurn || !got.StrictModel {
 		t.Fatalf("配置未加载: %+v", got)
+	}
+	if !got.QuotaAwarePick || got.QuotaPollIntervalSec != 90 {
+		t.Fatalf("额度配置应按文件加载: %+v", got)
 	}
 	if got.DefaultModel != "gemini-3.6-flash" {
 		t.Error("未指定字段必须保留默认值")
@@ -56,6 +59,9 @@ func TestConfigTemplate(t *testing.T) {
 	}
 	if value.Port <= 0 || value.DefaultModel == "" {
 		t.Fatal("配置模板缺少启动字段")
+	}
+	if value.QuotaAwarePick || value.QuotaPollIntervalSec != 60 {
+		t.Fatal("模板应采用默认选号策略和 60 秒轮询间隔")
 	}
 	if value.StrictModel {
 		t.Fatal("配置模板中的严格模型校验必须默认关闭")
